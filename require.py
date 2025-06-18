@@ -20,6 +20,7 @@ class Requirement:
         critical (bool): Whether the requirement is marked as critical.
         children (list[str]): List of child requirement IDs.
         completed (bool): Whether the requirement is completed.
+
     """
 
     req_id: str
@@ -88,6 +89,7 @@ def parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
 
     Raises:
         ValueError: If duplicate requirement IDs are found.
+
     """
     requirements: list[Requirement] = []
     seen_ids: Set[str] = set()
