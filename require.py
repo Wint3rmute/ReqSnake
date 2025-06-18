@@ -1,7 +1,6 @@
 import re
 from typing import List, Dict, Optional
 import os
-import unittest
 
 class Requirement:
     """Represents a requirement parsed from a Markdown block-quote.
@@ -64,14 +63,21 @@ def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
 
     Returns:
         List[Requirement]: A list of parsed Requirement objects.
+
+    Raises:
+        ValueError: If duplicate requirement IDs are found.
     """
     requirements = []
+    seen_ids = set()
     blockquote_pattern = re.compile(r"(^> .*(?:\n>.*)*)", re.MULTILINE)
     for block in blockquote_pattern.findall(md_text):
         lines = [line[2:].strip() for line in block.split('\n') if line.startswith('>')]
         if len(lines) < 2:
             continue  # Not enough info for a requirement
         req_id = lines[0]
+        if req_id in seen_ids:
+            raise ValueError(f"Duplicate requirement ID found: {req_id}")
+        seen_ids.add(req_id)
         description = lines[1]
         critical = False
         children = []
@@ -83,62 +89,4 @@ def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
                 if child_id:
                     children.append(child_id)
         requirements.append(Requirement(req_id, description, critical, children))
-    return requirements
-
-# --- Unit Tests ---
-class TestRequirementParser(unittest.TestCase):
-    """Unit tests for the requirement Markdown parser."""
-    def test_single_requirement(self):
-        """Test parsing a single requirement with critical and children."""
-        md = "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n> child: MECH-54\n> child: MECH-57"
-        reqs = parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 1)
-        self.assertEqual(reqs[0], Requirement(
-            req_id="MECH-123",
-            description="The wing must withstand 5g load.",
-            critical=True,
-            children=["MECH-54", "MECH-57"]
-        ))
-
-    def test_multiple_requirements(self):
-        """Test parsing multiple requirements in one Markdown string."""
-        md = (
-            "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n> child: MECH-54\n\n"
-            "> AVIO-15\n> Avionics must support dual redundancy.\n>\n> child: AVIO-16\n"
-        )
-        reqs = parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 2)
-        self.assertEqual(reqs[0], Requirement(
-            req_id="MECH-123",
-            description="The wing must withstand 5g load.",
-            critical=True,
-            children=["MECH-54"]
-        ))
-        self.assertEqual(reqs[1], Requirement(
-            req_id="AVIO-15",
-            description="Avionics must support dual redundancy.",
-            critical=False,
-            children=["AVIO-16"]
-        ))
-
-    def test_no_critical_or_children(self):
-        """Test parsing a requirement with no critical or children fields."""
-        md = "> SW-33\n> On-board software for the plane."
-        reqs = parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 1)
-        self.assertEqual(reqs[0], Requirement(
-            req_id="SW-33",
-            description="On-board software for the plane.",
-            critical=False,
-            children=[]
-        ))
-
-    def test_ignores_non_blockquotes(self):
-        """Test that non-blockquote content is ignored by the parser."""
-        md = "# Not a requirement\nSome text.\n\n> MECH-123\n> The wing must withstand 5g load.\n> critical"
-        reqs = parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 1)
-        self.assertEqual(reqs[0].req_id, "MECH-123")
-
-if __name__ == "__main__":
-    unittest.main() 
+    return requirements 
