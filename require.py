@@ -2,6 +2,7 @@ import re
 from typing import List, Dict, Optional
 import os
 import argparse
+import json
 
 class Requirement:
     """Represents a requirement parsed from a Markdown block-quote.
@@ -11,8 +12,9 @@ class Requirement:
         description (str): A short description of the requirement.
         critical (bool): Whether the requirement is marked as critical.
         children (List[str]): List of child requirement IDs.
+        completed (bool): Whether the requirement is completed.
     """
-    def __init__(self, req_id: str, description: str, critical: bool = False, children: Optional[List[str]] = None):
+    def __init__(self, req_id: str, description: str, critical: bool = False, children: Optional[List[str]] = None, completed: bool = False):
         """Initializes a Requirement instance.
 
         Args:
@@ -20,11 +22,13 @@ class Requirement:
             description (str): A short description of the requirement.
             critical (bool, optional): Whether the requirement is critical. Defaults to False.
             children (Optional[List[str]], optional): List of child requirement IDs. Defaults to None.
+            completed (bool, optional): Whether the requirement is completed. Defaults to False.
         """
         self.req_id = req_id
         self.description = description
         self.critical = critical
         self.children = children or []
+        self.completed = completed
 
     def __eq__(self, other):
         """Checks equality with another Requirement instance.
@@ -39,7 +43,8 @@ class Requirement:
             self.req_id == other.req_id and
             self.description == other.description and
             self.critical == other.critical and
-            self.children == other.children
+            self.children == other.children and
+            self.completed == other.completed
         )
 
     def __repr__(self):
@@ -48,8 +53,28 @@ class Requirement:
         Returns:
             str: String representation of the requirement.
         """
-        return f"Requirement({self.req_id!r}, {self.description!r}, critical={self.critical}, children={self.children})"
+        return f"Requirement({self.req_id!r}, {self.description!r}, critical={self.critical}, children={self.children}, completed={self.completed})"
 
+    def to_dict(self) -> dict:
+        """Converts the Requirement to a dictionary for JSON serialization."""
+        return {
+            "id": self.req_id,
+            "description": self.description,
+            "critical": self.critical,
+            "children": self.children,
+            "completed": self.completed
+        }
+
+    @staticmethod
+    def from_dict(data: dict) -> 'Requirement':
+        """Creates a Requirement from a dictionary."""
+        return Requirement(
+            req_id=data["id"],
+            description=data["description"],
+            critical=data.get("critical", False),
+            children=data.get("children", []),
+            completed=data.get("completed", False)
+        )
 
 def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
     """Parses requirements from Markdown text using block-quote syntax.
@@ -57,7 +82,7 @@ def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
     Each requirement is defined as a block-quote where:
         - The first line is the requirement ID.
         - The second line is the short description.
-        - Subsequent lines can specify 'critical' and 'child: <ID>'.
+        - Subsequent lines can specify 'critical', 'child: <ID>', and 'completed'.
 
     Args:
         md_text (str): The Markdown text to parse.
@@ -81,42 +106,129 @@ def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
         seen_ids.add(req_id)
         description = lines[1]
         critical = False
+        completed = False
         children = []
         for line in lines[2:]:
             if line.lower() == 'critical':
                 critical = True
+            elif line.lower() == 'completed':
+                completed = True
             elif line.lower().startswith('child:'):
                 child_id = line[6:].strip()
                 if child_id:
                     children.append(child_id)
-        requirements.append(Requirement(req_id, description, critical, children))
+        requirements.append(Requirement(req_id, description, critical, children, completed))
     return requirements
 
+def find_markdown_files(root_dir: str) -> List[str]:
+    """Recursively finds all Markdown (.md) files in the given directory."""
+    md_files = []
+    for dirpath, _, filenames in os.walk(root_dir):
+        for filename in filenames:
+            if filename.lower().endswith('.md'):
+                md_files.append(os.path.join(dirpath, filename))
+    return md_files
+
+def load_lockfile(lockfile_path: str) -> List[Requirement]:
+    """Loads requirements from a JSON lockfile."""
+    with open(lockfile_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return [Requirement.from_dict(item) for item in data]
+
+def save_lockfile(lockfile_path: str, requirements: List[Requirement]):
+    """Saves requirements to a JSON lockfile."""
+    with open(lockfile_path, 'w', encoding='utf-8') as f:
+        json.dump([req.to_dict() for req in requirements], f, indent=2)
+
+def diff_requirements(old: List[Requirement], new: List[Requirement]) -> Dict[str, List[Requirement]]:
+    """Compares two lists of requirements and returns a diff dict."""
+    old_dict = {r.req_id: r for r in old}
+    new_dict = {r.req_id: r for r in new}
+    added = [new_dict[rid] for rid in new_dict if rid not in old_dict]
+    removed = [old_dict[rid] for rid in old_dict if rid not in new_dict]
+    changed = [new_dict[rid] for rid in new_dict if rid in old_dict and new_dict[rid] != old_dict[rid]]
+    return {"added": added, "removed": removed, "changed": changed}
 
 def main():
     """Entrypoint for the require.py CLI application."""
     parser = argparse.ArgumentParser(description="require.py - Markdown requirements tracker")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # 'parse' command
-    parse_parser = subparsers.add_parser("parse", help="Parse requirements from a Markdown file and print them.")
-    parse_parser.add_argument("file", type=str, help="Path to the Markdown file to parse.")
+    # 'init' command
+    subparsers.add_parser("init", help="Initialize require.py in the current directory and generate requirements.lock.")
+
+    # 'check' command
+    subparsers.add_parser("check", help="Check if requirements.lock is up-to-date with Markdown requirements.")
+
+    # 'lock' command
+    subparsers.add_parser("lock", help="Update requirements.lock to match current Markdown requirements.")
 
     args = parser.parse_args()
+    lockfile_path = os.path.join(os.getcwd(), "requirements.lock")
 
-    if args.command == "parse":
-        if not os.path.isfile(args.file):
-            print(f"Error: File not found: {args.file}")
+    if args.command == "init":
+        md_files = find_markdown_files(os.getcwd())
+        all_requirements = []
+        for md_file in md_files:
+            with open(md_file, "r", encoding="utf-8") as f:
+                md_text = f.read()
+            try:
+                reqs = parse_requirements_from_markdown(md_text)
+            except ValueError as e:
+                print(f"Error in {md_file}: {e}")
+                exit(1)
+            all_requirements.extend(reqs)
+        save_lockfile(lockfile_path, all_requirements)
+        print(f"Initialized requirements.lock with {len(all_requirements)} requirements.")
+
+    elif args.command == "check":
+        if not os.path.isfile(lockfile_path):
+            print("requirements.lock not found. Run 'require.py init' first.")
             exit(1)
-        with open(args.file, "r", encoding="utf-8") as f:
-            md_text = f.read()
-        try:
-            requirements = parse_requirements_from_markdown(md_text)
-        except ValueError as e:
-            print(f"Error: {e}")
-            exit(1)
-        for req in requirements:
-            print(req)
+        md_files = find_markdown_files(os.getcwd())
+        all_requirements = []
+        for md_file in md_files:
+            with open(md_file, "r", encoding="utf-8") as f:
+                md_text = f.read()
+            try:
+                reqs = parse_requirements_from_markdown(md_text)
+            except ValueError as e:
+                print(f"Error in {md_file}: {e}")
+                exit(1)
+            all_requirements.extend(reqs)
+        lock_reqs = load_lockfile(lockfile_path)
+        diff = diff_requirements(lock_reqs, all_requirements)
+        if not diff["added"] and not diff["removed"] and not diff["changed"]:
+            print("requirements.lock is up-to-date.")
+        else:
+            if diff["added"]:
+                print("Added requirements:")
+                for req in diff["added"]:
+                    print(f"  + {req}")
+            if diff["removed"]:
+                print("Removed requirements:")
+                for req in diff["removed"]:
+                    print(f"  - {req}")
+            if diff["changed"]:
+                print("Changed requirements:")
+                for req in diff["changed"]:
+                    print(f"  * {req}")
+            exit(2)
+
+    elif args.command == "lock":
+        md_files = find_markdown_files(os.getcwd())
+        all_requirements = []
+        for md_file in md_files:
+            with open(md_file, "r", encoding="utf-8") as f:
+                md_text = f.read()
+            try:
+                reqs = parse_requirements_from_markdown(md_text)
+            except ValueError as e:
+                print(f"Error in {md_file}: {e}")
+                exit(1)
+            all_requirements.extend(reqs)
+        save_lockfile(lockfile_path, all_requirements)
+        print(f"requirements.lock updated with {len(all_requirements)} requirements.")
 
 if __name__ == "__main__":
     main() 
