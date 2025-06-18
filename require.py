@@ -10,6 +10,7 @@ from pathlib import Path
 import argparse
 import json
 import sys
+from enum import Enum, auto
 
 
 @dataclass(frozen=True)
@@ -75,11 +76,19 @@ class InitResult(NamedTuple):
     requirements: list[Requirement]
 
 
+class DiffType(Enum):
+    """Enum representing types of requirement diffs: added, removed, or changed."""
+
+    ADDED = auto()
+    REMOVED = auto()
+    CHANGED = auto()
+
+
 class CheckResult(NamedTuple):
     """Result of api_check: scanned files and diff dict."""
 
     scanned_files: list[Path]
-    diff: dict[str, list[Requirement]]
+    diff: dict[DiffType, list[Requirement]]
 
 
 class LockResult(NamedTuple):
@@ -169,7 +178,7 @@ def save_lockfile(lockfile_path: Path, requirements: list[Requirement]) -> None:
 
 def diff_requirements(
     old: list[Requirement], new: list[Requirement]
-) -> dict[str, list[Requirement]]:
+) -> dict[DiffType, list[Requirement]]:
     """Compare two lists of requirements and return a diff dict."""
     old_dict: dict[str, Requirement] = {r.req_id: r for r in old}
     new_dict: dict[str, Requirement] = {r.req_id: r for r in new}
@@ -184,7 +193,7 @@ def diff_requirements(
         for rid in new_dict
         if rid in old_dict and new_dict[rid] != old_dict[rid]
     ]
-    return {"added": added, "removed": removed, "changed": changed}
+    return {DiffType.ADDED: added, DiffType.REMOVED: removed, DiffType.CHANGED: changed}
 
 
 def print_scanned_files(md_files: list[Path]) -> None:
@@ -285,30 +294,34 @@ def main() -> None:
             sys.exit(1)
         print_scanned_files(check_result.scanned_files)
         diff = check_result.diff
-        if not diff["added"] and not diff["removed"] and not diff["changed"]:
+        if (
+            not diff[DiffType.ADDED]
+            and not diff[DiffType.REMOVED]
+            and not diff[DiffType.CHANGED]
+        ):
             print("👍 requirements.lock is up-to-date.")
         else:
-            if diff["added"]:
+            if diff[DiffType.ADDED]:
                 print("➕ Added requirements:")
-                for req in diff["added"]:
+                for req in diff[DiffType.ADDED]:
                     for line in req.to_pretty_string().split("\n"):
                         print(
                             f"  + {line}"
                             if line == req.to_pretty_string().split("\n")[0]
                             else f"    {line}"
                         )
-            if diff["removed"]:
+            if diff[DiffType.REMOVED]:
                 print("➖ Removed requirements:")
-                for req in diff["removed"]:
+                for req in diff[DiffType.REMOVED]:
                     for line in req.to_pretty_string().split("\n"):
                         print(
                             f"  - {line}"
                             if line == req.to_pretty_string().split("\n")[0]
                             else f"    {line}"
                         )
-            if diff["changed"]:
+            if diff[DiffType.CHANGED]:
                 print("✏️ Changed requirements:")
-                for req in diff["changed"]:
+                for req in diff[DiffType.CHANGED]:
                     for line in req.to_pretty_string().split("\n"):
                         print(
                             f"  * {line}"
