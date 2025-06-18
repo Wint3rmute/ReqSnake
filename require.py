@@ -248,7 +248,21 @@ def api_lock(directory: Optional[str] = None) -> LockResult:
         reqs = parse_requirements_from_markdown(md_text)
         requirements.extend(reqs)
     lockfile_path = dir_path / "requirements.lock"
-    save_lockfile(lockfile_path, requirements)
+    # Check if lockfile exists and is up-to-date
+    lockfile_exists = lockfile_path.is_file()
+    up_to_date = False
+    if lockfile_exists:
+        try:
+            old_reqs = load_lockfile(lockfile_path)
+            up_to_date = old_reqs == requirements
+        except Exception:
+            up_to_date = False
+    print_scanned_files(md_files)
+    if up_to_date:
+        print("👍 requirements.lock is already up-to-date.")
+    else:
+        save_lockfile(lockfile_path, requirements)
+        print(f"✅ requirements.lock updated with {len(requirements)} requirements.")
     return LockResult(md_files, requirements)
 
 
@@ -320,7 +334,7 @@ def main() -> None:
                             else f"    {line}"
                         )
             if diff[DiffType.CHANGED]:
-                print("✏️ Changed requirements:")
+                print("✏️  Changed requirements:")
                 for req in diff[DiffType.CHANGED]:
                     for line in req.to_pretty_string().split("\n"):
                         print(
@@ -331,11 +345,33 @@ def main() -> None:
             sys.exit(2)
 
     elif args.command == "lock":
-        lock_result = api_lock()
-        print_scanned_files(lock_result.scanned_files)
-        print(
-            f"✅ requirements.lock updated with {len(lock_result.requirements)} requirements."
-        )
+        dir_path = Path.cwd()
+        lockfile_path = dir_path / "requirements.lock"
+        # Gather new requirements
+        md_files = find_markdown_files(dir_path)
+        requirements: list[Requirement] = []
+        for md_file in md_files:
+            with md_file.open("r", encoding="utf-8") as f:
+                md_text = f.read()
+            reqs = parse_requirements_from_markdown(md_text)
+            requirements.extend(reqs)
+        # Check if lockfile exists and is up-to-date
+        lockfile_exists = lockfile_path.is_file()
+        up_to_date = False
+        if lockfile_exists:
+            try:
+                old_reqs = load_lockfile(lockfile_path)
+                up_to_date = old_reqs == requirements
+            except Exception:
+                up_to_date = False
+        print_scanned_files(md_files)
+        if up_to_date:
+            print("👍 requirements.lock is already up-to-date.")
+        else:
+            save_lockfile(lockfile_path, requirements)
+            print(
+                f"✅ requirements.lock updated with {len(requirements)} requirements."
+            )
 
 
 if __name__ == "__main__":

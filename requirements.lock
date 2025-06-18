@@ -75,5 +75,174 @@
     "critical": false,
     "children": [],
     "completed": false
+  },
+  {
+    "id": "REQ-CLI-LOCK-IDEMPOTENT",
+    "description": "When the user runs `require.py lock` and the requirements have not changed since the last lock, the CLI should print a message indicating that the lockfile is already up-to-date, rather than stating it was updated. Only print the \"requirements.lock updated\" message if the lockfile was actually changed.",
+    "critical": false,
+    "children": [],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-1",
+    "description": "The parser shall extract requirements from Markdown blockquotes with high accuracy.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-2",
+    "description": "The parser shall raise an error if a requirement ID is duplicated in the scanned files.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-2"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-3",
+    "description": "The parser shall support the 'critical', 'child', and 'completed' attributes in the blockquote format.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-2"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-4",
+    "description": "The parser shall ignore non-blockquote content in Markdown files.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-5",
+    "description": "The parser shall be dependency-free and use only the Python standard library.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-6",
+    "description": "The parser shall handle blockquotes with only an ID or only a description by ignoring them.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-7",
+    "description": "The parser shall ignore extra blank lines or whitespace within blockquotes.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-8",
+    "description": "The parser shall treat attribute keywords (e.g., 'critical', 'child', 'completed') case-insensitively and ignore leading/trailing spaces.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-2"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-9",
+    "description": "The parser shall allow multiple 'child:' lines per requirement and ignore duplicate child IDs.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-2"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-10",
+    "description": "The parser shall ignore unknown attributes in blockquotes.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-2"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-11",
+    "description": "The parser shall treat requirement IDs as case-sensitive and not allow IDs with only case differences.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-2"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-12",
+    "description": "The parser shall handle blockquotes with inconsistent use of '>' by only considering lines that start with '>'.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-13",
+    "description": "The parser shall ignore Markdown formatting inside blockquotes.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-14",
+    "description": "The parser shall ignore blockquotes that span multiple paragraphs (i.e., with blank lines in between).",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-15",
+    "description": "The parser shall raise an error if a circular child relationship is detected.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-2"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-16",
+    "description": "The parser shall support requirements and attributes containing Unicode characters.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-17",
+    "description": "The parser shall ignore blockquotes that are commented out in Markdown (e.g., inside ).",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
+  },
+  {
+    "id": "REQ-PARSER-18",
+    "description": "The parser shall handle files with mixed line endings and leading/trailing whitespace.",
+    "critical": false,
+    "children": [
+      "REQ-CORE-1"
+    ],
+    "completed": false
   }
 ]

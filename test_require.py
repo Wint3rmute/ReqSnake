@@ -218,6 +218,27 @@ class TestRequirePyScenarios(unittest.TestCase):
         self.assertIn("REQ-DOES-NOT-EXIST", req.children)
         # The parser/API should not raise an error for non-existent child references
 
+    def test_lock_idempotency(self) -> None:
+        """Test that running api_lock twice without changes does not alter the lockfile (idempotency)."""
+        md_content = "> REQ-1\n> The first requirement.\n> critical\n"
+        md_path = os.path.join(self.test_dir, "reqs.md")
+        with open(md_path, "w") as f:
+            f.write(md_content)
+        # First lock
+        api_init(self.test_dir)
+        lockfile_path = os.path.join(self.test_dir, "requirements.lock")
+        with open(lockfile_path, "r") as f:
+            lock_data_1 = f.read()
+        # Second lock (should be idempotent)
+        api_lock(self.test_dir)
+        with open(lockfile_path, "r") as f:
+            lock_data_2 = f.read()
+        self.assertEqual(
+            lock_data_1,
+            lock_data_2,
+            "Lockfile should not change if requirements are unchanged.",
+        )
+
 
 class TestRequirementPrettyString(unittest.TestCase):
     """Unit tests for the to_pretty_string method of Requirement."""
