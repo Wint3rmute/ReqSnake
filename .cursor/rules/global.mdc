@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- Use modern, idiomatic Python.
+- Respect code style, type checking, and linter rules.
+- Run ./check.sh for validation.
+- Don't add any dependencies, only rely on the standard library.
+- Follow google-style docstrings. Document your code.

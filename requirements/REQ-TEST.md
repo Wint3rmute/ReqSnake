@@ -1,12 +1,17 @@
 > REQ-TEST-1
-> The tool shall provide unit tests for the Markdown parser.
+> The parser shall provide unit tests for the Markdown parser.
 > critical
+> child-of: REQ-CORE-1
+> child-of: REQ-PARSER-1
 
 > REQ-TEST-2
-> The tool shall provide integration tests that use the Python API to simulate CLI operations in temporary directories.
+> The application code provide integration tests that use the Python API to simulate CLI operations in temporary directories.
+> child-of: REQ-CORE-1
 
 > REQ-TEST-3
 > Integration tests shall verify that requirements.lock is updated when Markdown files are changed.
+> child-of: REQ-CORE-1
 
 > REQ-TEST-4
-> Integration tests shall verify that duplicate requirement IDs raise an error. 
+> Integration tests shall verify that duplicate requirement IDs raise an error.
+> child-of: REQ-CORE-1 

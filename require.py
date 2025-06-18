@@ -4,8 +4,8 @@
 This module provides both a CLI and a Python API for managing requirements defined in Markdown files.
 """
 import re
-from typing import Optional, Any, Set, NamedTuple
-from dataclasses import dataclass, field
+from typing import Optional, Any, Set, NamedTuple, Tuple, Dict
+from dataclasses import dataclass, field, asdict
 from pathlib import Path
 import argparse
 import json
@@ -33,21 +33,11 @@ class Requirement:
     children: list[str] = field(default_factory=list)
     completed: bool = False
 
-    def to_dict(self) -> dict[str, Any]:
-        """Return a dictionary representation of the requirement for JSON serialization."""
-        return {
-            "id": self.req_id,
-            "description": self.description,
-            "critical": self.critical,
-            "children": self.children,
-            "completed": self.completed,
-        }
-
     @staticmethod
     def from_dict(data: dict[str, Any]) -> "Requirement":
         """Create a Requirement from a dictionary."""
         return Requirement(
-            req_id=data["id"],
+            req_id=data["req_id"],
             description=data["description"],
             critical=data.get("critical", False),
             children=data.get("children", []),
@@ -67,7 +57,14 @@ class Requirement:
 
 
 class InitResult(NamedTuple):
-    """Result of api_init: scanned files and requirements."""
+    """Result of the api_init function: scanned files and requirements."""
+
+    scanned_files: list[Path]
+    requirements: list[Requirement]
+
+
+class LockResult(NamedTuple):
+    """Result of api_lock: scanned files and requirements."""
 
     scanned_files: list[Path]
     requirements: list[Requirement]
@@ -92,11 +89,22 @@ class CheckResult(NamedTuple):
     diff: dict[DiffType, list[Requirement]]
 
 
-class LockResult(NamedTuple):
-    """Result of api_lock: scanned files and requirements."""
+@dataclass(frozen=True)
+class ParsedRequirement:
+    """A requirement and the path to the file it was parsed from."""
 
-    scanned_files: list[Path]
-    requirements: list[Requirement]
+    requirement: Requirement
+    source_file: Path
+
+
+class StatusResult(NamedTuple):
+    """Result of api_status: requirements with file associations and status summary."""
+
+    requirements: list[ParsedRequirement]
+    total_count: int
+    completed_count: int
+    critical_count: int
+    critical_completed_count: int
 
 
 # Regex for blockquotes: matches contiguous blockquote lines
@@ -135,6 +143,16 @@ def parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
         if len(lines) < 2:
             continue
         req_id = lines[0]
+        # Enforce REQ-CORE-6: ID must be <STRING>-<NUMBER> and ASCII only
+        if not re.match(r"^[A-Za-z][A-Za-z0-9_-]*-\d+$", req_id):
+            raise ValueError(
+                f"Requirement ID '{req_id}' does not match the required format '<STRING>-<NUMBER>' (REQ-CORE-6)"
+            )
+        # Additional check: ensure all characters are ASCII
+        if not all(ord(c) < 128 for c in req_id):
+            raise ValueError(
+                f"Requirement ID '{req_id}' contains non-ASCII characters, which are not allowed. (REQ-CORE-6)"
+            )
         if req_id in seen_ids:
             raise ValueError(f"Duplicate requirement ID found: {req_id}")
         seen_ids.add(req_id)
@@ -142,26 +160,80 @@ def parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
         critical = False
         completed = False
         children: list[str] = []
+        seen_children: Set[str] = set()
         for line in lines[2:]:
             norm = line.strip().lower()
             if norm == "critical":
                 critical = True
             elif norm == "completed":
                 completed = True
-            elif norm.startswith("child:"):
-                child_id = line[6:].strip()
-                if child_id and child_id not in children:
-                    children.append(child_id)
-            # Ignore unknown attributes (REQ-PARSER-10)
+            elif norm.startswith("child-of"):
+                after = line[len("child-of") :].lstrip()
+                if after.startswith(":"):
+                    after = after[1:].lstrip()
+                child_id = after
+                if child_id:
+                    norm_child_id = child_id.strip().upper()
+                    if norm_child_id in seen_children:
+                        raise ValueError(
+                            f"Duplicate child ID '{child_id}' in requirement '{req_id}' (case-insensitive, whitespace-insensitive)"
+                        )
+                    seen_children.add(norm_child_id)
+                    children.append(child_id.strip())
+            # Raise errors on unknown attributes (REQ-PARSER-10)
+            else:
+                raise ValueError(
+                    f"Unknown atttribute '{norm}' of requirement '{req_id}'"
+                )
         requirements.append(
             Requirement(req_id, description, critical, children, completed)
         )
     return requirements
 
 
+def read_requirementsignore(root_dir: Path) -> list[tuple[str, bool]]:
+    """Read .requirementsignore file and return a list of (pattern, is_negation) tuples.
+
+    Patterns follow .gitignore glob rules. Lines starting with '!' are negations.
+    """
+    ignore_file = root_dir / ".requirementsignore"
+    patterns: list[tuple[str, bool]] = []
+    if ignore_file.is_file():
+        for line in ignore_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            is_negation = line.startswith("!")
+            pattern = line[1:] if is_negation else line
+            patterns.append((pattern, is_negation))
+    return patterns
+
+
+def is_ignored_by_patterns(rel_path: str, patterns: list[tuple[str, bool]]) -> bool:
+    """Return True if rel_path is ignored by the given .gitignore-style patterns."""
+    from pathlib import PurePath
+
+    path = PurePath(rel_path)
+    ignored = False
+    for pattern, is_negation in patterns:
+        # .gitignore patterns are matched against the path as posix string
+        if path.match(pattern):
+            ignored = not is_negation
+    return ignored
+
+
 def find_markdown_files(root_dir: Path) -> list[Path]:
-    """Return all Markdown (.md) files in the given directory recursively."""
-    return [p for p in root_dir.rglob("*.md") if p.is_file()]
+    """Return all Markdown (.md) files in the given directory recursively, respecting .requirementsignore as .gitignore-style globs."""
+    ignore_patterns = read_requirementsignore(root_dir)
+    files = []
+    for p in root_dir.rglob("*.md"):
+        if not p.is_file():
+            continue
+        rel_path = str(p.relative_to(root_dir))
+        if is_ignored_by_patterns(rel_path, ignore_patterns):
+            continue
+        files.append(p)
+    return files
 
 
 def load_lockfile(lockfile_path: Path) -> list[Requirement]:
@@ -176,7 +248,7 @@ def save_lockfile(lockfile_path: Path, requirements: list[Requirement]) -> None:
     with tempfile.NamedTemporaryFile(
         "w", delete=False, dir=lockfile_path.parent, encoding="utf-8"
     ) as tf:
-        json.dump([req.to_dict() for req in requirements], tf, indent=2)
+        json.dump([asdict(req) for req in requirements], tf, indent=2)
         tempname = tf.name
     Path(tempname).replace(lockfile_path)
 
@@ -220,6 +292,152 @@ def print_diff_section(
                 print(f"{prefix}{line}")
 
 
+def print_status_summary(status_result: StatusResult) -> None:
+    """Print a summary of requirement completion status."""
+    total = status_result.total_count
+    completed = status_result.completed_count
+    critical = status_result.critical_count
+    critical_completed = status_result.critical_completed_count
+
+    if total == 0:
+        print("📊 No requirements found.")
+        return
+
+    completion_percentage = (completed / total) * 100 if total > 0 else 0
+    critical_completion_percentage = (
+        (critical_completed / critical) * 100 if critical > 0 else 0
+    )
+
+    print("📊 Requirements Status Summary:")
+    print(f"  Total requirements: {total}")
+    print(f"  Completed: {completed}/{total} ({completion_percentage:.1f}%)")
+    print(f"  Critical requirements: {critical}")
+    print(
+        f"  Critical completed: {critical_completed}/{critical} ({critical_completion_percentage:.1f}%)"
+    )
+    print()
+
+
+def print_status_by_file(status_result: StatusResult) -> None:
+    """Print requirements grouped by source file with completion status."""
+    # Group requirements by file
+    file_groups: dict[Path, list[ParsedRequirement]] = {}
+    for pr in status_result.requirements:
+        file_groups.setdefault(pr.source_file, []).append(pr)
+
+    print("📁 Requirements by File:")
+    for file_path in sorted(file_groups.keys()):
+        reqs = file_groups[file_path]
+        completed_count = sum(1 for pr in reqs if pr.requirement.completed)
+        total_count = len(reqs)
+        completion_percentage = (
+            (completed_count / total_count) * 100 if total_count > 0 else 0
+        )
+
+        status_emoji = (
+            "✅"
+            if completed_count == total_count
+            else "🔄" if completed_count > 0 else "⏳"
+        )
+        print(
+            f"  {status_emoji} {file_path} ({completed_count}/{total_count} completed, {completion_percentage:.1f}%)"
+        )
+
+        for pr in reqs:
+            req = pr.requirement
+            req_status = "✅" if req.completed else "⏳"
+            critical_indicator = "⚠️ " if req.critical else "  "
+            print(
+                f"    {req_status} {critical_indicator}{req.req_id}: {req.description}"
+            )
+    print()
+
+
+def print_hierarchical_status(status_result: StatusResult) -> None:
+    """Print hierarchical status showing parent-child relationships."""
+    # Create a mapping from requirement ID to requirement
+    req_dict: dict[str, ParsedRequirement] = {
+        pr.requirement.req_id: pr for pr in status_result.requirements
+    }
+
+    # Find root requirements (those that are not children of any other requirement)
+    all_children: set[str] = set()
+    for pr in status_result.requirements:
+        all_children.update(pr.requirement.children)
+
+    root_reqs = [
+        pr
+        for pr in status_result.requirements
+        if pr.requirement.req_id not in all_children
+    ]
+
+    print("🌳 Hierarchical Status:")
+
+    def print_requirement_tree(pr: ParsedRequirement, level: int = 0) -> None:
+        """Recursively print a requirement and its children."""
+        req = pr.requirement
+        indent = "  " * level
+        status_emoji = "✅" if req.completed else "⏳"
+        critical_indicator = "⚠️ " if req.critical else "  "
+
+        print(
+            f"{indent}{status_emoji} {critical_indicator}{req.req_id}: {req.description}"
+        )
+
+        # Print children
+        for child_id in req.children:
+            if child_id in req_dict:
+                print_requirement_tree(req_dict[child_id], level + 1)
+            else:
+                print(f"{indent}  ❓ {child_id}: (not found)")
+
+    for root_pr in sorted(root_reqs, key=lambda pr: pr.requirement.req_id):
+        print_requirement_tree(root_pr)
+
+
+def validate_completed_children(requirements: list[Requirement]) -> None:
+    """Raise ValueError if any completed requirement has incomplete children (REQ-CORE-7)."""
+    req_dict = {r.req_id: r for r in requirements}
+    # Build parent-to-children mapping
+    parent_to_children: dict[str, list[Requirement]] = {}
+    for req in requirements:
+        for parent_id in req.children:
+            parent_to_children.setdefault(parent_id, []).append(req)
+    errors: list[tuple[str, str]] = []
+    for req in requirements:
+        if req.completed:
+            for child in parent_to_children.get(req.req_id, []):
+                if not child.completed:
+                    errors.append((req.req_id, child.req_id))
+    if errors:
+        msg = "The following requirements are marked as completed but have incomplete children:\n"
+        for parent_id, child_id in errors:
+            msg += f"  - {parent_id} (incomplete child: {child_id})\n"
+        raise ValueError(msg)
+
+
+def validate_no_cycles(requirements: list[Requirement]) -> None:
+    """Raise ValueError if any circular child relationship is detected (REQ-PARSER-15)."""
+    req_dict = {r.req_id: r for r in requirements}
+    visited_global = set()
+
+    def visit(req_id: str, path: list[str]) -> None:
+        if req_id in path:
+            cycle = path[path.index(req_id) :] + [req_id]
+            raise ValueError(f"Circular dependency detected: {' -> '.join(cycle)}")
+        if req_id in visited_global:
+            return
+        path.append(req_id)
+        for parent_id in req_dict[req_id].children:
+            if parent_id in req_dict:
+                visit(parent_id, path)
+        path.pop()
+        visited_global.add(req_id)
+
+    for req in requirements:
+        visit(req.req_id, [])
+
+
 # --- Python API ---
 def api_init(directory: Optional[str] = None) -> InitResult:
     """Scan Markdown files and create requirements.lock."""
@@ -231,27 +449,32 @@ def api_init(directory: Optional[str] = None) -> InitResult:
             md_text = f.read()
         reqs = parse_requirements_from_markdown(md_text)
         requirements.extend(reqs)
+    validate_no_cycles(requirements)
+    validate_completed_children(requirements)
     lockfile_path = dir_path / "requirements.lock"
     save_lockfile(lockfile_path, requirements)
     return InitResult(md_files, requirements)
 
 
-def api_check(directory: Optional[str] = None) -> CheckResult:
-    """Scan Markdown files and compare to requirements.lock."""
+def api_check(directory: Optional[str] = None) -> Tuple[CheckResult, Dict[str, Path]]:
+    """Scan Markdown files and compare to requirements.lock, returning file info for each requirement."""
     dir_path = Path(directory) if directory else Path.cwd()
     lockfile_path = dir_path / "requirements.lock"
     if not lockfile_path.is_file():
         raise FileNotFoundError("requirements.lock not found. Run 'init' first.")
     md_files = find_markdown_files(dir_path)
-    requirements: list[Requirement] = []
+    parsed_reqs: list[ParsedRequirement] = []
     for md_file in md_files:
-        with md_file.open("r", encoding="utf-8") as f:
-            md_text = f.read()
-        reqs = parse_requirements_from_markdown(md_text)
-        requirements.extend(reqs)
+        parsed_reqs.extend(parse_requirements_from_file(md_file))
+    requirements = [pr.requirement for pr in parsed_reqs]
+    validate_completed_children(requirements)
+    validate_no_cycles(requirements)
     lock_reqs = load_lockfile(lockfile_path)
     diff = diff_requirements(lock_reqs, requirements)
-    return CheckResult(md_files, diff)
+    req_id_to_file: Dict[str, Path] = {
+        pr.requirement.req_id: pr.source_file for pr in parsed_reqs
+    }
+    return CheckResult(md_files, diff), req_id_to_file
 
 
 def api_lock(directory: Optional[str] = None) -> LockResult:
@@ -264,6 +487,8 @@ def api_lock(directory: Optional[str] = None) -> LockResult:
             md_text = f.read()
         reqs = parse_requirements_from_markdown(md_text)
         requirements.extend(reqs)
+    validate_completed_children(requirements)
+    validate_no_cycles(requirements)
     lockfile_path = dir_path / "requirements.lock"
     # Check if lockfile exists and is up-to-date
     lockfile_exists = lockfile_path.is_file()
@@ -283,8 +508,188 @@ def api_lock(directory: Optional[str] = None) -> LockResult:
     return LockResult(md_files, requirements)
 
 
+def api_status(directory: Optional[str] = None) -> StatusResult:
+    """Scan Markdown files and return status information about requirements.
+
+    Args:
+        directory: Optional directory path. Defaults to current working directory.
+
+    Returns:
+        StatusResult: Requirements with file associations and status summary.
+
+    Raises:
+        FileNotFoundError: If requirements.lock not found.
+
+    """
+    dir_path = Path(directory) if directory else Path.cwd()
+    lockfile_path = dir_path / "requirements.lock"
+    if not lockfile_path.is_file():
+        raise FileNotFoundError("requirements.lock not found. Run 'init' first.")
+
+    # Load requirements from lockfile
+    lock_reqs = load_lockfile(lockfile_path)
+    validate_completed_children(lock_reqs)
+
+    # Get file associations for requirements
+    md_files = find_markdown_files(dir_path)
+    parsed_reqs: list[ParsedRequirement] = []
+    for md_file in md_files:
+        parsed_reqs.extend(parse_requirements_from_file(md_file))
+
+    # Create a mapping from requirement ID to ParsedRequirement
+    req_id_to_parsed: dict[str, ParsedRequirement] = {}
+    for pr in parsed_reqs:
+        req_id_to_parsed[pr.requirement.req_id] = pr
+
+    # Create ParsedRequirement list for lockfile requirements
+    status_reqs: list[ParsedRequirement] = []
+    for req in lock_reqs:
+        # Find the source file for this requirement
+        source_file = req_id_to_parsed.get(
+            req.req_id, ParsedRequirement(req, Path("unknown.md"))
+        ).source_file
+        status_reqs.append(ParsedRequirement(req, source_file))
+
+    # Calculate statistics
+    total_count = len(status_reqs)
+    completed_count = sum(1 for pr in status_reqs if pr.requirement.completed)
+    critical_count = sum(1 for pr in status_reqs if pr.requirement.critical)
+    critical_completed_count = sum(
+        1 for pr in status_reqs if pr.requirement.critical and pr.requirement.completed
+    )
+
+    return StatusResult(
+        requirements=status_reqs,
+        total_count=total_count,
+        completed_count=completed_count,
+        critical_count=critical_count,
+        critical_completed_count=critical_completed_count,
+    )
+
+
+def parse_requirements_from_file(md_file: Path) -> list[ParsedRequirement]:
+    """Parse requirements from a Markdown file, returning ParsedRequirement with file path."""
+    with md_file.open("r", encoding="utf-8") as f:
+        md_text = f.read()
+    reqs = parse_requirements_from_markdown(md_text)
+    return [ParsedRequirement(r, md_file) for r in reqs]
+
+
+def generate_status_markdown(status_result: StatusResult) -> str:
+    """Generate a Markdown report of requirements status from a StatusResult."""
+    lines = []
+    # Summary
+    total = status_result.total_count
+    completed = status_result.completed_count
+    critical = status_result.critical_count
+    critical_completed = status_result.critical_completed_count
+    completion_percentage = (completed / total) * 100 if total > 0 else 0
+    critical_completion_percentage = (
+        (critical_completed / critical) * 100 if critical > 0 else 0
+    )
+    lines.append("# Requirements Status Report\n")
+    lines.append("## Summary\n")
+    lines.append(f"- **Total requirements:** {total}")
+    lines.append(f"- **Completed:** {completed}/{total} ({completion_percentage:.1f}%)")
+    lines.append(f"- **Critical requirements:** {critical}")
+    lines.append(
+        f"- **Critical completed:** {critical_completed}/{critical} ({critical_completion_percentage:.1f}%)\n"
+    )
+
+    # By file
+    lines.append("## Requirements by File\n")
+    file_groups: dict[Path, list[ParsedRequirement]] = {}
+    for pr in status_result.requirements:
+        file_groups.setdefault(pr.source_file, []).append(pr)
+    for file_path in sorted(file_groups.keys()):
+        reqs = file_groups[file_path]
+        completed_count = sum(1 for pr in reqs if pr.requirement.completed)
+        total_count = len(reqs)
+        completion_percentage = (
+            (completed_count / total_count) * 100 if total_count > 0 else 0
+        )
+        lines.append(f"### {file_path}")
+        lines.append(
+            f"- **Completed:** {completed_count}/{total_count} ({completion_percentage:.1f}%)\n"
+        )
+        for pr in reqs:
+            req = pr.requirement
+            status_emoji = "✅" if req.completed else "⏳"
+            critical_indicator = "⚠️ " if req.critical else ""
+            children_str = (
+                f" _(children: {', '.join(req.children)})_" if req.children else ""
+            )
+            lines.append(
+                f"- {status_emoji} {critical_indicator}**{req.req_id}**: {req.description}{children_str}"
+            )
+        lines.append("")
+
+    # Hierarchical
+    lines.append("## Hierarchical Status\n")
+    req_dict: dict[str, ParsedRequirement] = {
+        pr.requirement.req_id: pr for pr in status_result.requirements
+    }
+    all_children: set[str] = set()
+    for pr in status_result.requirements:
+        all_children.update(pr.requirement.children)
+    root_reqs = [
+        pr
+        for pr in status_result.requirements
+        if pr.requirement.req_id not in all_children
+    ]
+
+    def print_tree(pr: ParsedRequirement, level: int = 0) -> None:
+        req = pr.requirement
+        indent = "  " * level
+        status_emoji = "✅" if req.completed else "⏳"
+        critical_indicator = "⚠️ " if req.critical else ""
+        children_str = (
+            f" _(children: {', '.join(req.children)})_" if req.children else ""
+        )
+        lines.append(
+            f"{indent}- {status_emoji} {critical_indicator}**{req.req_id}**: {req.description}{children_str}"
+        )
+        for child_id in req.children:
+            if child_id in req_dict:
+                print_tree(req_dict[child_id], level + 1)
+            else:
+                lines.append(f"{indent}  - ❓ **{child_id}**: (not found)")
+
+    for root_pr in sorted(root_reqs, key=lambda pr: pr.requirement.req_id):
+        print_tree(root_pr)
+    lines.append("")
+    return "\n".join(lines)
+
+
+def generate_dot_from_lockfile(lockfile_path: Path, output_path: Path) -> None:
+    """Generate a Graphviz dot file representing the requirements hierarchy."""
+    requirements = load_lockfile(lockfile_path)
+    req_dict = {r.req_id: r for r in requirements}
+    lines = ["digraph requirements {"]
+    # Add nodes
+    for req in requirements:
+        label = req.req_id.replace('"', "")
+        node_label = f"{label}"
+        attrs = []
+        if req.critical:
+            attrs.append("style=filled fillcolor=red")
+        if req.completed:
+            attrs.append("style=filled fillcolor=lightgreen")
+        attr_str = (",".join(attrs)) if attrs else ""
+        lines.append(
+            f'    "{req.req_id}" [label="{node_label}"{(", "+attr_str) if attr_str else ""}];'
+        )
+    # Add edges
+    for req in requirements:
+        for parent_id in req.children:
+            if parent_id in req_dict:
+                lines.append(f'    "{parent_id}" -> "{req.req_id}";')
+    lines.append("}")
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+
+
 # --- CLI Entrypoint ---
-def cli_init(args):
+def cli_init(args: argparse.Namespace) -> None:
     """Handle the 'init' CLI command."""
     init_result = api_init()
     print_scanned_files(init_result.scanned_files)
@@ -293,15 +698,30 @@ def cli_init(args):
     )
 
 
-def cli_check(args):
+def cli_check(args: argparse.Namespace) -> None:
     """Handle the 'check' CLI command."""
     try:
-        check_result = api_check()
+        check_result, req_id_to_file = api_check()
     except FileNotFoundError:
         print("❌ requirements.lock not found. Run 'require.py init' first.")
         sys.exit(1)
     print_scanned_files(check_result.scanned_files)
     diff = check_result.diff
+
+    def print_diff_with_file(
+        diff_type: str, requirements: list[Requirement], symbol: str
+    ) -> None:
+        if requirements:
+            print(f"{symbol} {diff_type} requirements:")
+            for req in requirements:
+                file_path = req_id_to_file.get(req.req_id, "<unknown file>")
+                for i, line in enumerate(req.to_pretty_string().split("\n")):
+                    prefix = f"  {symbol} " if i == 0 else "    "
+                    if i == 0:
+                        print(f"{prefix}{line}  [file: {file_path}]")
+                    else:
+                        print(f"{prefix}{line}")
+
     if (
         not diff[DiffType.ADDED]
         and not diff[DiffType.REMOVED]
@@ -309,13 +729,13 @@ def cli_check(args):
     ):
         print("👍 requirements.lock is up-to-date.")
     else:
-        print_diff_section("Added", diff[DiffType.ADDED], "+")
-        print_diff_section("Removed", diff[DiffType.REMOVED], "-")
-        print_diff_section("Changed", diff[DiffType.CHANGED], "*")
+        print_diff_with_file("Added", diff[DiffType.ADDED], "+")
+        print_diff_with_file("Removed", diff[DiffType.REMOVED], "-")
+        print_diff_with_file("Changed", diff[DiffType.CHANGED], "*")
         sys.exit(2)
 
 
-def cli_lock(args):
+def cli_lock(args: argparse.Namespace) -> None:
     """Handle the 'lock' CLI command."""
     dir_path = Path.cwd()
     lockfile_path = dir_path / "requirements.lock"
@@ -344,6 +764,52 @@ def cli_lock(args):
         print(f"✅ requirements.lock updated with {len(requirements)} requirements.")
 
 
+def cli_status(args: argparse.Namespace) -> None:
+    """Handle the 'status' CLI command."""
+    try:
+        status_result = api_status()
+    except FileNotFoundError:
+        print("❌ requirements.lock not found. Run 'require.py init' first.")
+        sys.exit(1)
+
+    print_status_summary(status_result)
+    print_status_by_file(status_result)
+    print_hierarchical_status(status_result)
+
+
+def cli_status_md(args: argparse.Namespace) -> None:
+    """Handle the 'status-md' CLI command."""
+    try:
+        status_result = api_status()
+    except FileNotFoundError:
+        print("❌ requirements.lock not found. Run 'require.py init' first.")
+        sys.exit(1)
+    output_path = (
+        Path(args.output)
+        if hasattr(args, "output") and args.output
+        else Path("requirements-status.md")
+    )
+    md = generate_status_markdown(status_result)
+    output_path.write_text(md, encoding="utf-8")
+    print(f"✅ Requirements status written to {output_path}")
+
+
+def cli_visual_dot(args: argparse.Namespace) -> None:
+    """Handle the 'visual-dot' CLI command."""
+    dir_path = Path.cwd()
+    lockfile_path = dir_path / "requirements.lock"
+    if not lockfile_path.is_file():
+        print("❌ requirements.lock not found. Run 'require.py init' first.")
+        sys.exit(1)
+    output_path = (
+        Path(args.output)
+        if hasattr(args, "output") and args.output
+        else Path("requirements-visual.dot")
+    )
+    generate_dot_from_lockfile(lockfile_path, output_path)
+    print(f"✅ Requirements Graphviz dot file written to {output_path}")
+
+
 def main() -> None:
     """Parse arguments and run the appropriate CLI command for require.py."""
     parser = argparse.ArgumentParser(
@@ -370,6 +836,39 @@ def main() -> None:
         "lock", help="Update requirements.lock to match current Markdown requirements."
     )
     p_lock.set_defaults(func=cli_lock)
+
+    # 'status' command
+    p_status = subparsers.add_parser(
+        "status",
+        help="Get status information about requirements.",
+    )
+    p_status.set_defaults(func=cli_status)
+
+    # 'status-md' command
+    p_status_md = subparsers.add_parser(
+        "status-md",
+        help="Generate a Markdown file with the status of all requirements (from requirements.lock).",
+    )
+    p_status_md.add_argument(
+        "-o",
+        "--output",
+        default="requirements-status.md",
+        help="Output Markdown file (default: requirements-status.md)",
+    )
+    p_status_md.set_defaults(func=cli_status_md)
+
+    # 'visual-dot' command
+    p_visual_dot = subparsers.add_parser(
+        "visual-dot",
+        help="Generate a Graphviz dot file representing the requirements hierarchy (from requirements.lock).",
+    )
+    p_visual_dot.add_argument(
+        "-o",
+        "--output",
+        default="requirements-visual.dot",
+        help="Output dot file (default: requirements-visual.dot)",
+    )
+    p_visual_dot.set_defaults(func=cli_visual_dot)
 
     args = parser.parse_args()
     args.func(args)

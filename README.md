@@ -39,34 +39,70 @@ Huge, proprietary programs like:
     - No dependencies
     - No strings attached
 - It lets you manage dependencies via Markdown
-    - Markdown syntax to define a dependency is yet to be defined
+    - **Markdown syntax to define a requirement is blockquote-based and well-defined**
 - It is smart about change tracking
     - It simply uses `git`
     - It keeps a `requirements.lock` file for more fine-grained change detection
     - It can warn you about deleting important dependencies
 
+## Requirements Syntax Example
+
+Requirements are defined in Markdown blockquotes, one per requirement. Supported attributes:
+
+- `critical` — marks a requirement as critical
+- `child-of` — specifies a parent relationship (no cycles allowed)
+- `completed` — marks a requirement as completed
+
+Example:
+
+```
+> REQ-1
+> The system shall support user authentication.
+> critical
+> child-of: REQ-0
+> completed
+
+> REQ-2
+> The system shall store user credentials securely.
+```
+
+## Features
+
+- **No dependencies:** Only the Python standard library is used.
+- **Blockquote-based Markdown syntax:** Human-readable, easy to edit.
+- **Requirements hierarchy:** Use `child-of` to define relationships.
+- **Change tracking:** Uses a `requirements.lock` file for precise diffing.
+- **CLI commands:**
+    - `require.py init` — scan Markdown files and generate `requirements.lock`.
+    - `require.py check` — compare the lockfile to Markdown requirements. Shows which file each changed requirement comes from.
+    - `require.py lock` — update the lockfile. Idempotent: only updates if needed.
+- **Validation workflow:** All changes are validated with `./check.sh` (runs tests, type checks, and linter).
+- **Google-style docstrings and modern Python:** All code is documented and type-annotated.
+
 ## Quick Start example
 
-- `require.py init` - initialize `require.py` in the current working directory
+- `require.py init` — initialize `require.py` in the current working directory
     - This will scan the existing directory for Markdown files and generate a `requirements.lock`
-- `require.py check` - will read the current `requirements.lock` file and check if it is up-to-date with the requirements defined in the Markdown documentation in your working directory.
-    - If there are changes, the difference between `requirements.lock` file and the currently defined requirements will be displayed
-- `require.py lock` - will update the `requirements.lock` file to reflect the currently defined requirements in your Markdown files
+- `require.py check` — will read the current `requirements.lock` file and check if it is up-to-date with the requirements defined in the Markdown documentation in your working directory.
+    - If there are changes, the difference between `requirements.lock` file and the currently defined requirements will be displayed, including the file path for each changed requirement.
+- `require.py lock` — will update the `requirements.lock` file to reflect the currently defined requirements in your Markdown files. If nothing has changed, the lockfile is left untouched.
 
 ## Questions to be asked
 
 - How to mark requirements so that it is human-readable and markdown-friendly?
-    - I want requirements to be named like `ABC-123`
-    - A bunch of numbers + a number
+    - Use blockquotes and IDs like `ABC-123`
     - For example, when making a plane:
         - `MECH-123` would be a requirement for the mechanical team
         - `AVIO-15` would be something for avionics
         - `SW-33` would be on-board software for the plane
 - How to generate a lockfile with all defined requirements at a given point in time?
-    - This should be a JSON file
-- I want to mark some requirements as `critical`, so that `require.py` throws an error if they are ever removed
-- I want to mark some requirements as children of other requirements
-    - No cycles are allowed
-- I want to mark requirements as `completed`
-- I want to track completion status of requirements and their child requirements
+    - This is done with `require.py init` and produces a JSON file
+- How to mark some requirements as `critical`, so that `require.py` throws an error if they are ever removed?
+    - Add `critical` as an attribute in the blockquote
+- How to mark some requirements as children of other requirements?
+    - Use `child-of` attributes (no cycles allowed)
+- How to mark requirements as `completed`?
+    - Add `completed` as an attribute in the blockquote
+- How to track completion status of requirements and their child requirements?
+    - Use the `completed` attribute and the hierarchy features
 
