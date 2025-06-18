@@ -1,5 +1,5 @@
 import re
-from typing import List, Dict, Optional, Any, Set
+from typing import List, Dict, Optional, Any, Set, Tuple
 import os
 import argparse
 import json
@@ -151,6 +151,56 @@ def diff_requirements(old: List[Requirement], new: List[Requirement]) -> Dict[st
     changed: List[Requirement] = [new_dict[rid] for rid in new_dict if rid in old_dict and new_dict[rid] != old_dict[rid]]
     return {"added": added, "removed": removed, "changed": changed}
 
+# --- Python API ---
+def api_init(directory: Optional[str] = None) -> Tuple[List[str], List[Requirement]]:
+    """Scan Markdown files and create requirements.lock. Returns (scanned_files, requirements)."""
+    if directory is None:
+        directory = os.getcwd()
+    md_files = find_markdown_files(directory)
+    requirements: List[Requirement] = []
+    for md_file in md_files:
+        with open(md_file, "r", encoding="utf-8") as f:
+            md_text = f.read()
+        reqs = parse_requirements_from_markdown(md_text)
+        requirements.extend(reqs)
+    lockfile_path = os.path.join(directory, "requirements.lock")
+    save_lockfile(lockfile_path, requirements)
+    return md_files, requirements
+
+def api_check(directory: Optional[str] = None) -> Tuple[List[str], Dict[str, List[Requirement]]]:
+    """Scan Markdown files and compare to requirements.lock. Returns (scanned_files, diff_dict)."""
+    if directory is None:
+        directory = os.getcwd()
+    lockfile_path = os.path.join(directory, "requirements.lock")
+    if not os.path.isfile(lockfile_path):
+        raise FileNotFoundError("requirements.lock not found. Run 'init' first.")
+    md_files = find_markdown_files(directory)
+    requirements: List[Requirement] = []
+    for md_file in md_files:
+        with open(md_file, "r", encoding="utf-8") as f:
+            md_text = f.read()
+        reqs = parse_requirements_from_markdown(md_text)
+        requirements.extend(reqs)
+    lock_reqs = load_lockfile(lockfile_path)
+    diff = diff_requirements(lock_reqs, requirements)
+    return md_files, diff
+
+def api_lock(directory: Optional[str] = None) -> Tuple[List[str], List[Requirement]]:
+    """Scan Markdown files and update requirements.lock. Returns (scanned_files, requirements)."""
+    if directory is None:
+        directory = os.getcwd()
+    md_files = find_markdown_files(directory)
+    requirements: List[Requirement] = []
+    for md_file in md_files:
+        with open(md_file, "r", encoding="utf-8") as f:
+            md_text = f.read()
+        reqs = parse_requirements_from_markdown(md_text)
+        requirements.extend(reqs)
+    lockfile_path = os.path.join(directory, "requirements.lock")
+    save_lockfile(lockfile_path, requirements)
+    return md_files, requirements
+
+# --- CLI Entrypoint ---
 def main() -> None:
     """Entrypoint for the require.py CLI application."""
     parser = argparse.ArgumentParser(description="require.py - Markdown requirements tracker")
@@ -169,43 +219,21 @@ def main() -> None:
     lockfile_path = os.path.join(os.getcwd(), "requirements.lock")
 
     if args.command == "init":
-        md_files = find_markdown_files(os.getcwd())
+        md_files, requirements = api_init()
         print("Scanning the following Markdown files:")
         for md_file in md_files:
             print(f"  {md_file}")
-        init_requirements: List[Requirement] = []
-        for md_file in md_files:
-            with open(md_file, "r", encoding="utf-8") as f:
-                md_text = f.read()
-            try:
-                reqs = parse_requirements_from_markdown(md_text)
-            except ValueError as e:
-                print(f"Error in {md_file}: {e}")
-                exit(1)
-            init_requirements.extend(reqs)
-        save_lockfile(lockfile_path, init_requirements)
-        print(f"Initialized requirements.lock with {len(init_requirements)} requirements.")
+        print(f"Initialized requirements.lock with {len(requirements)} requirements.")
 
     elif args.command == "check":
-        if not os.path.isfile(lockfile_path):
+        try:
+            md_files, diff = api_check()
+        except FileNotFoundError:
             print("requirements.lock not found. Run 'require.py init' first.")
             exit(1)
-        md_files = find_markdown_files(os.getcwd())
         print("Scanning the following Markdown files:")
         for md_file in md_files:
             print(f"  {md_file}")
-        check_requirements: List[Requirement] = []
-        for md_file in md_files:
-            with open(md_file, "r", encoding="utf-8") as f:
-                md_text = f.read()
-            try:
-                reqs = parse_requirements_from_markdown(md_text)
-            except ValueError as e:
-                print(f"Error in {md_file}: {e}")
-                exit(1)
-            check_requirements.extend(reqs)
-        lock_reqs = load_lockfile(lockfile_path)
-        diff = diff_requirements(lock_reqs, check_requirements)
         if not diff["added"] and not diff["removed"] and not diff["changed"]:
             print("requirements.lock is up-to-date.")
         else:
@@ -224,22 +252,11 @@ def main() -> None:
             exit(2)
 
     elif args.command == "lock":
-        md_files = find_markdown_files(os.getcwd())
+        md_files, requirements = api_lock()
         print("Scanning the following Markdown files:")
         for md_file in md_files:
             print(f"  {md_file}")
-        lock_requirements: List[Requirement] = []
-        for md_file in md_files:
-            with open(md_file, "r", encoding="utf-8") as f:
-                md_text = f.read()
-            try:
-                reqs = parse_requirements_from_markdown(md_text)
-            except ValueError as e:
-                print(f"Error in {md_file}: {e}")
-                exit(1)
-            lock_requirements.extend(reqs)
-        save_lockfile(lockfile_path, lock_requirements)
-        print(f"requirements.lock updated with {len(lock_requirements)} requirements.")
+        print(f"requirements.lock updated with {len(requirements)} requirements.")
 
 if __name__ == "__main__":
     main() 
