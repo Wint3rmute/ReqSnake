@@ -202,11 +202,40 @@ class TestRequirementPrettyString(unittest.TestCase):
     def test_pretty_string_variants(self) -> None:
         """Test pretty string output for various requirement field combinations."""
         cases = [
-            (Requirement(req_id="REQ-1", description="A minimal requirement."), "REQ-1: A minimal requirement."),
-            (Requirement(req_id="REQ-2", description="A critical requirement.", critical=True), "REQ-2: A critical requirement.\n  - critical"),
-            (Requirement(req_id="REQ-3", description="Has children.", children=["REQ-1", "REQ-2"]), "REQ-3: Has children.\n  - children: REQ-1, REQ-2"),
-            (Requirement(req_id="REQ-4", description="Completed requirement.", completed=True), "REQ-4: Completed requirement.\n  - completed"),
-            (Requirement(req_id="REQ-5", description="All fields set.", critical=True, children=["REQ-1", "REQ-2"], completed=True), "REQ-5: All fields set.\n  - critical\n  - children: REQ-1, REQ-2\n  - completed"),
+            (
+                Requirement(req_id="REQ-1", description="A minimal requirement."),
+                "REQ-1: A minimal requirement.",
+            ),
+            (
+                Requirement(
+                    req_id="REQ-2", description="A critical requirement.", critical=True
+                ),
+                "REQ-2: A critical requirement.\n  - critical",
+            ),
+            (
+                Requirement(
+                    req_id="REQ-3",
+                    description="Has children.",
+                    children=["REQ-1", "REQ-2"],
+                ),
+                "REQ-3: Has children.\n  - children: REQ-1, REQ-2",
+            ),
+            (
+                Requirement(
+                    req_id="REQ-4", description="Completed requirement.", completed=True
+                ),
+                "REQ-4: Completed requirement.\n  - completed",
+            ),
+            (
+                Requirement(
+                    req_id="REQ-5",
+                    description="All fields set.",
+                    critical=True,
+                    children=["REQ-1", "REQ-2"],
+                    completed=True,
+                ),
+                "REQ-5: All fields set.\n  - critical\n  - children: REQ-1, REQ-2\n  - completed",
+            ),
         ]
         for req, expected in cases:
             with self.subTest(req=req):

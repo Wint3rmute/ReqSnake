@@ -208,7 +208,9 @@ def print_scanned_files(md_files: list[Path]) -> None:
         print(f"  {md_file}")
 
 
-def print_diff_section(diff_type: str, requirements: list[Requirement], symbol: str) -> None:
+def print_diff_section(
+    diff_type: str, requirements: list[Requirement], symbol: str
+) -> None:
     """Print a section of the diff with a given symbol and requirements list."""
     if requirements:
         print(f"{symbol} {diff_type} requirements:")
@@ -286,7 +288,9 @@ def cli_init(args):
     """Handle the 'init' CLI command."""
     init_result = api_init()
     print_scanned_files(init_result.scanned_files)
-    print(f"✅ Initialized requirements.lock with {len(init_result.requirements)} requirements.")
+    print(
+        f"✅ Initialized requirements.lock with {len(init_result.requirements)} requirements."
+    )
 
 
 def cli_check(args):
