@@ -78,7 +78,7 @@
   },
   {
     "id": "REQ-CLI-LOCK-IDEMPOTENT",
-    "description": "When the user runs `require.py lock` and the requirements have not changed since the last lock, the CLI should print a message indicating that the lockfile is already up-to-date, rather than stating it was updated. Only print the \"requirements.lock updated\" message if the lockfile was actually changed.",
+    "description": "When the user runs `require.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., \"requirements.lock is already up-to-date.\"). Only print the \"requirements.lock updated\" message if the lockfile was actually changed.",
     "critical": false,
     "children": [],
     "completed": false
