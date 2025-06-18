@@ -1,5 +1,9 @@
 import unittest
-from require import Requirement, parse_requirements_from_markdown
+import tempfile
+import os
+import shutil
+import json
+from require import Requirement, parse_requirements_from_markdown, api_init, api_lock
 
 class TestRequirementParser(unittest.TestCase):
     """Unit tests for the requirement Markdown parser."""
@@ -17,10 +21,18 @@ class TestRequirementParser(unittest.TestCase):
 
     def test_multiple_requirements(self) -> None:
         """Test parsing multiple requirements in one Markdown string."""
-        md = (
-            "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n> child: MECH-54\n\n"
-            "> AVIO-15\n> Avionics must support dual redundancy.\n>\n> child: AVIO-16\n"
-        )
+        md = '''
+> MECH-123
+> The wing must withstand 5g load.
+>
+> critical
+> child: MECH-54
+
+> AVIO-15
+> Avionics must support dual redundancy.
+>
+> child: AVIO-16
+'''
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 2)
         self.assertEqual(reqs[0], Requirement(
@@ -38,7 +50,10 @@ class TestRequirementParser(unittest.TestCase):
 
     def test_no_critical_or_children(self) -> None:
         """Test parsing a requirement with no critical or children fields."""
-        md = "> SW-33\n> On-board software for the plane."
+        md = '''
+> SW-33
+> On-board software for the plane.
+'''
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0], Requirement(
@@ -50,20 +65,116 @@ class TestRequirementParser(unittest.TestCase):
 
     def test_ignores_non_blockquotes(self) -> None:
         """Test that non-blockquote content is ignored by the parser."""
-        md = "# Not a requirement\nSome text.\n\n> MECH-123\n> The wing must withstand 5g load.\n> critical"
+        md = '''
+# Not a requirement
+Some text.
+
+> MECH-123
+> The wing must withstand 5g load.
+> critical
+'''
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "MECH-123")
 
     def test_duplicate_ids(self) -> None:
         """Test that duplicate requirement IDs raise a ValueError."""
-        md = (
-            "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n\n"
-            "> MECH-123\n> Another requirement with the same ID.\n"
-        )
+        md = '''
+> MECH-123
+> The wing must withstand 5g load.
+>
+> critical
+
+> MECH-123
+> Another requirement with the same ID.
+'''
         with self.assertRaises(ValueError) as context:
             parse_requirements_from_markdown(md)
         self.assertIn("Duplicate requirement ID found: MECH-123", str(context.exception))
+
+class TestRequirePyIntegration(unittest.TestCase):
+    """Integration tests for require.py scenarios as described in ARCHITECTURE.md."""
+    def setUp(self) -> None:
+        self.test_dir = tempfile.mkdtemp()
+        self.old_cwd = os.getcwd()
+        os.chdir(self.test_dir)
+
+    def tearDown(self) -> None:
+        os.chdir(self.old_cwd)
+        shutil.rmtree(self.test_dir)
+
+    def test_init_and_reinit(self) -> None:
+        # 1. Create a new folder (done by setUp)
+        # 2. Create some requirements in Markdown files
+        md_content = '''
+> REQ-1
+> The first requirement.
+> critical
+
+> REQ-2
+> The second requirement.
+> child: REQ-1
+'''
+        with open('reqs.md', 'w') as f:
+            f.write(md_content)
+        # 3. Run require.py init (via Python API)
+        files, reqs = api_init(self.test_dir)
+        self.assertIn(os.path.join(self.test_dir, 'reqs.md'), files)
+        # 4. Check if requirements.lock has been generated
+        lockfile_path = os.path.join(self.test_dir, 'requirements.lock')
+        self.assertTrue(os.path.exists(lockfile_path))
+        with open(lockfile_path, 'r') as f:
+            lock_data = json.load(f)
+        self.assertEqual(len(lock_data), 2)
+        # 5. Run require.py init again
+        # Should succeed and overwrite, as per current API (no error expected)
+        files2, reqs2 = api_init(self.test_dir)
+        self.assertEqual(files, files2)
+        self.assertEqual(len(reqs2), 2)
+        # 6. Check if requirements.lock is still correct
+        with open(lockfile_path, 'r') as f:
+            lock_data2 = json.load(f)
+        self.assertEqual(lock_data, lock_data2)
+
+    def test_add_requirement_updates_lockfile(self) -> None:
+        """Test that requirements are added to requirements.lock when Markdown files are updated."""
+        # Step 1: Create initial Markdown file with one requirement
+        md_content = '''
+> REQ-1
+> The first requirement.
+> critical
+'''
+        md_path = os.path.join(self.test_dir, 'reqs.md')
+        with open(md_path, 'w') as f:
+            f.write(md_content)
+        # Step 2: Run api_init
+        api_init(self.test_dir)
+        lockfile_path = os.path.join(self.test_dir, 'requirements.lock')
+        with open(lockfile_path, 'r') as f:
+            lock_data = json.load(f)
+        self.assertEqual(len(lock_data), 1)
+        self.assertEqual(lock_data[0]['id'], 'REQ-1')
+
+        # Step 3: Update Markdown file to add a new requirement
+        md_content_updated = '''
+> REQ-1
+> The first requirement.
+> critical
+
+> REQ-2
+> The second requirement.
+'''
+        with open(md_path, 'w') as f:
+            f.write(md_content_updated)
+        # Step 4: Run api_lock to update the lockfile
+        api_lock(self.test_dir)
+        # Step 5: Check that both requirements are present
+        with open(lockfile_path, 'r') as f:
+            lock_data_updated = json.load(f)
+        self.assertEqual(len(lock_data_updated), 2)
+        ids = {req['id'] for req in lock_data_updated}
+        self.assertIn('REQ-1', ids)
+        self.assertIn('REQ-2', ids)
 
 if __name__ == "__main__":
     unittest.main() 

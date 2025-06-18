@@ -216,7 +216,6 @@ def main() -> None:
     subparsers.add_parser("lock", help="Update requirements.lock to match current Markdown requirements.")
 
     args = parser.parse_args()
-    lockfile_path = os.path.join(os.getcwd(), "requirements.lock")
 
     if args.command == "init":
         md_files, requirements = api_init()
