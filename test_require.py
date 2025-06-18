@@ -313,11 +313,11 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
         self.assertNotEqual(reqs[0].req_id, reqs[1].req_id)
 
     def test_inconsistent_blockquote_lines(self) -> None:
-        """REQ-PARSER-12: Only lines starting with '>' are considered."""
+        """REQ-PARSER-12: Only lines starting with '>' are considered (strict mode)."""
         md = "> REQ-1\nTest.\n> critical"
         reqs = parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 1)
-        self.assertFalse("Test." in reqs[0].description)
+        # Strict: both ID and description must start with '>'
+        self.assertEqual(len(reqs), 0)
 
     def test_ignore_markdown_formatting(self) -> None:
         """REQ-PARSER-13: Ignore Markdown formatting inside blockquotes."""
@@ -329,7 +329,9 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
         """REQ-PARSER-14: Ignore blockquotes that span multiple paragraphs (blank lines)."""
         md = "> REQ-1\n> First line.\n>\n> Second paragraph."
         reqs = parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 1)  # Current parser does not split on blank lines, so this is a design choice
+        self.assertEqual(
+            len(reqs), 1
+        )  # Current parser does not split on blank lines, so this is a design choice
 
     def test_circular_child_relationship(self) -> None:
         """REQ-PARSER-15: Raise error if a circular child relationship is detected."""

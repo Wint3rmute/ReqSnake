@@ -109,12 +109,21 @@ def parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
         ValueError: If duplicate requirement IDs are found.
 
     """
+    # Remove HTML comments (REQ-PARSER-17)
+    import re as _re
+
+    md_text = _re.sub(r"<!--.*?-->", "", md_text, flags=_re.DOTALL)
+
     requirements: list[Requirement] = []
     seen_ids: Set[str] = set()
     for block in BLOCKQUOTE_PATTERN.findall(md_text):
+        # Only consider lines starting with '>' (REQ-PARSER-12)
         lines = [line[2:].strip() for line in block.split("\n") if line.startswith(">")]
+        # Remove empty lines (REQ-PARSER-7)
+        lines = [line for line in lines if line.strip()]
+        # Skip blockquotes with only an ID or only a description (REQ-PARSER-6)
         if len(lines) < 2:
-            continue  # Not enough info for a requirement
+            continue
         req_id = lines[0]
         if req_id in seen_ids:
             raise ValueError(f"Duplicate requirement ID found: {req_id}")
@@ -124,14 +133,16 @@ def parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
         completed = False
         children: list[str] = []
         for line in lines[2:]:
-            if line.lower() == "critical":
+            norm = line.strip().lower()
+            if norm == "critical":
                 critical = True
-            elif line.lower() == "completed":
+            elif norm == "completed":
                 completed = True
-            elif line.lower().startswith("child:"):
+            elif norm.startswith("child:"):
                 child_id = line[6:].strip()
-                if child_id:
+                if child_id and child_id not in children:
                     children.append(child_id)
+            # Ignore unknown attributes (REQ-PARSER-10)
         requirements.append(
             Requirement(req_id, description, critical, children, completed)
         )
