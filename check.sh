@@ -2,6 +2,10 @@
 
 set -e
 
+# Format code
+
+black .
+
 # Run unit and integration tests
 python test_require.py
 
