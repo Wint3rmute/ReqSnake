@@ -1,3 +1,4 @@
+"""test_require.py - Unit and integration tests for require.py requirements management tool."""
 import unittest
 import tempfile
 import os
@@ -7,6 +8,7 @@ from require import Requirement, parse_requirements_from_markdown, api_init, api
 
 class TestRequirementParser(unittest.TestCase):
     """Unit tests for the requirement Markdown parser."""
+
     def test_single_requirement(self) -> None:
         """Test parsing a single requirement with critical and children."""
         md = "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n> child: MECH-54\n> child: MECH-57"
@@ -94,16 +96,20 @@ Some text.
 
 class TestRequirePyIntegration(unittest.TestCase):
     """Integration tests for require.py scenarios as described in ARCHITECTURE.md."""
+
     def setUp(self) -> None:
+        """Set up a temporary directory for integration tests."""
         self.test_dir = tempfile.mkdtemp()
         self.old_cwd = os.getcwd()
         os.chdir(self.test_dir)
 
     def tearDown(self) -> None:
+        """Clean up the temporary directory after integration tests."""
         os.chdir(self.old_cwd)
         shutil.rmtree(self.test_dir)
 
     def test_init_and_reinit(self) -> None:
+        """Test init and re-init scenarios for requirements management."""
         # 1. Create a new folder (done by setUp)
         # 2. Create some requirements in Markdown files
         md_content = '''
