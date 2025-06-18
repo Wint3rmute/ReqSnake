@@ -1,5 +1,5 @@
 import re
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any, Set
 import os
 import argparse
 import json
@@ -14,7 +14,7 @@ class Requirement:
         children (List[str]): List of child requirement IDs.
         completed (bool): Whether the requirement is completed.
     """
-    def __init__(self, req_id: str, description: str, critical: bool = False, children: Optional[List[str]] = None, completed: bool = False):
+    def __init__(self, req_id: str, description: str, critical: bool = False, children: Optional[List[str]] = None, completed: bool = False) -> None:
         """Initializes a Requirement instance.
 
         Args:
@@ -30,7 +30,7 @@ class Requirement:
         self.children = children or []
         self.completed = completed
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         """Checks equality with another Requirement instance.
 
         Args:
@@ -39,6 +39,8 @@ class Requirement:
         Returns:
             bool: True if all attributes are equal, False otherwise.
         """
+        if not isinstance(other, Requirement):
+            return NotImplemented
         return (
             self.req_id == other.req_id and
             self.description == other.description and
@@ -47,7 +49,7 @@ class Requirement:
             self.completed == other.completed
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Returns a string representation of the Requirement instance.
 
         Returns:
@@ -55,7 +57,7 @@ class Requirement:
         """
         return f"Requirement({self.req_id!r}, {self.description!r}, critical={self.critical}, children={self.children}, completed={self.completed})"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Converts the Requirement to a dictionary for JSON serialization."""
         return {
             "id": self.req_id,
@@ -66,7 +68,7 @@ class Requirement:
         }
 
     @staticmethod
-    def from_dict(data: dict) -> 'Requirement':
+    def from_dict(data: Dict[str, Any]) -> 'Requirement':
         """Creates a Requirement from a dictionary."""
         return Requirement(
             req_id=data["id"],
@@ -93,8 +95,8 @@ def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
     Raises:
         ValueError: If duplicate requirement IDs are found.
     """
-    requirements = []
-    seen_ids = set()
+    requirements: List[Requirement] = []
+    seen_ids: Set[str] = set()
     blockquote_pattern = re.compile(r"(^> .*(?:\n>.*)*)", re.MULTILINE)
     for block in blockquote_pattern.findall(md_text):
         lines = [line[2:].strip() for line in block.split('\n') if line.startswith('>')]
@@ -107,7 +109,7 @@ def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
         description = lines[1]
         critical = False
         completed = False
-        children = []
+        children: List[str] = []
         for line in lines[2:]:
             if line.lower() == 'critical':
                 critical = True
@@ -122,7 +124,7 @@ def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
 
 def find_markdown_files(root_dir: str) -> List[str]:
     """Recursively finds all Markdown (.md) files in the given directory."""
-    md_files = []
+    md_files: List[str] = []
     for dirpath, _, filenames in os.walk(root_dir):
         for filename in filenames:
             if filename.lower().endswith('.md'):
@@ -132,24 +134,24 @@ def find_markdown_files(root_dir: str) -> List[str]:
 def load_lockfile(lockfile_path: str) -> List[Requirement]:
     """Loads requirements from a JSON lockfile."""
     with open(lockfile_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+        data: List[Dict[str, Any]] = json.load(f)
     return [Requirement.from_dict(item) for item in data]
 
-def save_lockfile(lockfile_path: str, requirements: List[Requirement]):
+def save_lockfile(lockfile_path: str, requirements: List[Requirement]) -> None:
     """Saves requirements to a JSON lockfile."""
     with open(lockfile_path, 'w', encoding='utf-8') as f:
         json.dump([req.to_dict() for req in requirements], f, indent=2)
 
 def diff_requirements(old: List[Requirement], new: List[Requirement]) -> Dict[str, List[Requirement]]:
     """Compares two lists of requirements and returns a diff dict."""
-    old_dict = {r.req_id: r for r in old}
-    new_dict = {r.req_id: r for r in new}
-    added = [new_dict[rid] for rid in new_dict if rid not in old_dict]
-    removed = [old_dict[rid] for rid in old_dict if rid not in new_dict]
-    changed = [new_dict[rid] for rid in new_dict if rid in old_dict and new_dict[rid] != old_dict[rid]]
+    old_dict: Dict[str, Requirement] = {r.req_id: r for r in old}
+    new_dict: Dict[str, Requirement] = {r.req_id: r for r in new}
+    added: List[Requirement] = [new_dict[rid] for rid in new_dict if rid not in old_dict]
+    removed: List[Requirement] = [old_dict[rid] for rid in old_dict if rid not in new_dict]
+    changed: List[Requirement] = [new_dict[rid] for rid in new_dict if rid in old_dict and new_dict[rid] != old_dict[rid]]
     return {"added": added, "removed": removed, "changed": changed}
 
-def main():
+def main() -> None:
     """Entrypoint for the require.py CLI application."""
     parser = argparse.ArgumentParser(description="require.py - Markdown requirements tracker")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -168,7 +170,7 @@ def main():
 
     if args.command == "init":
         md_files = find_markdown_files(os.getcwd())
-        all_requirements = []
+        init_requirements: List[Requirement] = []
         for md_file in md_files:
             with open(md_file, "r", encoding="utf-8") as f:
                 md_text = f.read()
@@ -177,16 +179,16 @@ def main():
             except ValueError as e:
                 print(f"Error in {md_file}: {e}")
                 exit(1)
-            all_requirements.extend(reqs)
-        save_lockfile(lockfile_path, all_requirements)
-        print(f"Initialized requirements.lock with {len(all_requirements)} requirements.")
+            init_requirements.extend(reqs)
+        save_lockfile(lockfile_path, init_requirements)
+        print(f"Initialized requirements.lock with {len(init_requirements)} requirements.")
 
     elif args.command == "check":
         if not os.path.isfile(lockfile_path):
             print("requirements.lock not found. Run 'require.py init' first.")
             exit(1)
         md_files = find_markdown_files(os.getcwd())
-        all_requirements = []
+        check_requirements: List[Requirement] = []
         for md_file in md_files:
             with open(md_file, "r", encoding="utf-8") as f:
                 md_text = f.read()
@@ -195,9 +197,9 @@ def main():
             except ValueError as e:
                 print(f"Error in {md_file}: {e}")
                 exit(1)
-            all_requirements.extend(reqs)
+            check_requirements.extend(reqs)
         lock_reqs = load_lockfile(lockfile_path)
-        diff = diff_requirements(lock_reqs, all_requirements)
+        diff = diff_requirements(lock_reqs, check_requirements)
         if not diff["added"] and not diff["removed"] and not diff["changed"]:
             print("requirements.lock is up-to-date.")
         else:
@@ -217,7 +219,7 @@ def main():
 
     elif args.command == "lock":
         md_files = find_markdown_files(os.getcwd())
-        all_requirements = []
+        lock_requirements: List[Requirement] = []
         for md_file in md_files:
             with open(md_file, "r", encoding="utf-8") as f:
                 md_text = f.read()
@@ -226,9 +228,9 @@ def main():
             except ValueError as e:
                 print(f"Error in {md_file}: {e}")
                 exit(1)
-            all_requirements.extend(reqs)
-        save_lockfile(lockfile_path, all_requirements)
-        print(f"requirements.lock updated with {len(all_requirements)} requirements.")
+            lock_requirements.extend(reqs)
+        save_lockfile(lockfile_path, lock_requirements)
+        print(f"requirements.lock updated with {len(lock_requirements)} requirements.")
 
 if __name__ == "__main__":
     main() 

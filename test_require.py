@@ -3,7 +3,7 @@ from require import Requirement, parse_requirements_from_markdown
 
 class TestRequirementParser(unittest.TestCase):
     """Unit tests for the requirement Markdown parser."""
-    def test_single_requirement(self):
+    def test_single_requirement(self) -> None:
         """Test parsing a single requirement with critical and children."""
         md = "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n> child: MECH-54\n> child: MECH-57"
         reqs = parse_requirements_from_markdown(md)
@@ -15,7 +15,7 @@ class TestRequirementParser(unittest.TestCase):
             children=["MECH-54", "MECH-57"]
         ))
 
-    def test_multiple_requirements(self):
+    def test_multiple_requirements(self) -> None:
         """Test parsing multiple requirements in one Markdown string."""
         md = (
             "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n> child: MECH-54\n\n"
@@ -36,7 +36,7 @@ class TestRequirementParser(unittest.TestCase):
             children=["AVIO-16"]
         ))
 
-    def test_no_critical_or_children(self):
+    def test_no_critical_or_children(self) -> None:
         """Test parsing a requirement with no critical or children fields."""
         md = "> SW-33\n> On-board software for the plane."
         reqs = parse_requirements_from_markdown(md)
@@ -48,14 +48,14 @@ class TestRequirementParser(unittest.TestCase):
             children=[]
         ))
 
-    def test_ignores_non_blockquotes(self):
+    def test_ignores_non_blockquotes(self) -> None:
         """Test that non-blockquote content is ignored by the parser."""
         md = "# Not a requirement\nSome text.\n\n> MECH-123\n> The wing must withstand 5g load.\n> critical"
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "MECH-123")
 
-    def test_duplicate_ids(self):
+    def test_duplicate_ids(self) -> None:
         """Test that duplicate requirement IDs raise a ValueError."""
         md = (
             "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n\n"
