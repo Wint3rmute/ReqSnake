@@ -219,43 +219,43 @@ def main() -> None:
 
     if args.command == "init":
         md_files, requirements = api_init()
-        print("Scanning the following Markdown files:")
+        print("🔍 Scanning the following Markdown files:")
         for md_file in md_files:
             print(f"  {md_file}")
-        print(f"Initialized requirements.lock with {len(requirements)} requirements.")
+        print(f"✅ Initialized requirements.lock with {len(requirements)} requirements.")
 
     elif args.command == "check":
         try:
             md_files, diff = api_check()
         except FileNotFoundError:
-            print("requirements.lock not found. Run 'require.py init' first.")
+            print("❌ requirements.lock not found. Run 'require.py init' first.")
             exit(1)
-        print("Scanning the following Markdown files:")
+        print("🔍 Scanning the following Markdown files:")
         for md_file in md_files:
             print(f"  {md_file}")
         if not diff["added"] and not diff["removed"] and not diff["changed"]:
-            print("requirements.lock is up-to-date.")
+            print("👍 requirements.lock is up-to-date.")
         else:
             if diff["added"]:
-                print("Added requirements:")
+                print("➕ Added requirements:")
                 for req in diff["added"]:
                     print(f"  + {req}")
             if diff["removed"]:
-                print("Removed requirements:")
+                print("➖ Removed requirements:")
                 for req in diff["removed"]:
                     print(f"  - {req}")
             if diff["changed"]:
-                print("Changed requirements:")
+                print("✏️ Changed requirements:")
                 for req in diff["changed"]:
                     print(f"  * {req}")
             exit(2)
 
     elif args.command == "lock":
         md_files, requirements = api_lock()
-        print("Scanning the following Markdown files:")
+        print("🔍 Scanning the following Markdown files:")
         for md_file in md_files:
             print(f"  {md_file}")
-        print(f"requirements.lock updated with {len(requirements)} requirements.")
+        print(f"✅ requirements.lock updated with {len(requirements)} requirements.")
 
 if __name__ == "__main__":
     main() 
