@@ -54,6 +54,17 @@ class Requirement:
             completed=data.get("completed", False)
         )
 
+    def to_pretty_string(self) -> str:
+        """Return a human-readable, multi-line string representation of the requirement."""
+        lines = [f"{self.req_id}: {self.description}"]
+        if self.critical:
+            lines.append("  - critical")
+        if self.children:
+            lines.append(f"  - children: {', '.join(self.children)}")
+        if self.completed:
+            lines.append("  - completed")
+        return '\n'.join(lines)
+
 class InitResult(NamedTuple):
     """Result of api_init: scanned files and requirements."""
 
@@ -229,15 +240,18 @@ def main() -> None:
             if diff["added"]:
                 print("➕ Added requirements:")
                 for req in diff["added"]:
-                    print(f"  + {req}")
+                    for line in req.to_pretty_string().split('\n'):
+                        print(f"  + {line}" if line == req.to_pretty_string().split('\n')[0] else f"    {line}")
             if diff["removed"]:
                 print("➖ Removed requirements:")
                 for req in diff["removed"]:
-                    print(f"  - {req}")
+                    for line in req.to_pretty_string().split('\n'):
+                        print(f"  - {line}" if line == req.to_pretty_string().split('\n')[0] else f"    {line}")
             if diff["changed"]:
                 print("✏️ Changed requirements:")
                 for req in diff["changed"]:
-                    print(f"  * {req}")
+                    for line in req.to_pretty_string().split('\n'):
+                        print(f"  * {line}" if line == req.to_pretty_string().split('\n')[0] else f"    {line}")
             sys.exit(2)
 
     elif args.command == "lock":

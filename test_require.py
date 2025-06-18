@@ -5,6 +5,7 @@ import os
 import shutil
 import json
 from require import Requirement, parse_requirements_from_markdown, api_init, api_lock
+from pathlib import Path
 
 class TestRequirementParser(unittest.TestCase):
     """Unit tests for the requirement Markdown parser."""
@@ -94,7 +95,7 @@ Some text.
             parse_requirements_from_markdown(md)
         self.assertIn("Duplicate requirement ID found: MECH-123", str(context.exception))
 
-class TestRequirePyIntegration(unittest.TestCase):
+class TestRequirePyScenarios(unittest.TestCase):
     """Integration tests for require.py scenarios as described in ARCHITECTURE.md."""
 
     def setUp(self) -> None:
@@ -125,7 +126,7 @@ class TestRequirePyIntegration(unittest.TestCase):
             f.write(md_content)
         # 3. Run require.py init (via Python API)
         files, reqs = api_init(self.test_dir)
-        self.assertIn(os.path.join(self.test_dir, 'reqs.md'), files)
+        self.assertIn(Path(self.test_dir) / 'reqs.md', files)
         # 4. Check if requirements.lock has been generated
         lockfile_path = os.path.join(self.test_dir, 'requirements.lock')
         self.assertTrue(os.path.exists(lockfile_path))
@@ -181,6 +182,63 @@ class TestRequirePyIntegration(unittest.TestCase):
         ids = {req['id'] for req in lock_data_updated}
         self.assertIn('REQ-1', ids)
         self.assertIn('REQ-2', ids)
+
+    def test_child_of_nonexistent_requirement(self) -> None:
+        """Test behavior when a requirement is marked as a child of a non-existing requirement."""
+        md_content = '''
+> REQ-1
+> The first requirement.
+> child: REQ-DOES-NOT-EXIST
+'''
+        with open('reqs.md', 'w') as f:
+            f.write(md_content)
+        # Run require.py init (via Python API)
+        files, reqs = api_init(self.test_dir)
+        # There should be one requirement
+        self.assertEqual(len(reqs), 1)
+        req = reqs[0]
+        # The child relationship should be present
+        self.assertIn('REQ-DOES-NOT-EXIST', req.children)
+        # The parser/API should not raise an error for non-existent child references
+
+class TestRequirementPrettyString(unittest.TestCase):
+    """Unit tests for the to_pretty_string method of Requirement."""
+
+    def test_pretty_string_minimal(self) -> None:
+        """Test pretty string output for a minimal requirement (only required fields)."""
+        req = Requirement(req_id="REQ-1", description="A minimal requirement.")
+        expected = "REQ-1: A minimal requirement."
+        self.assertEqual(req.to_pretty_string(), expected)
+
+    def test_pretty_string_critical(self) -> None:
+        """Test pretty string output for a requirement marked as critical."""
+        req = Requirement(req_id="REQ-2", description="A critical requirement.", critical=True)
+        expected = "REQ-2: A critical requirement.\n  - critical"
+        self.assertEqual(req.to_pretty_string(), expected)
+
+    def test_pretty_string_children(self) -> None:
+        """Test pretty string output for a requirement with children."""
+        req = Requirement(req_id="REQ-3", description="Has children.", children=["REQ-1", "REQ-2"])
+        expected = "REQ-3: Has children.\n  - children: REQ-1, REQ-2"
+        self.assertEqual(req.to_pretty_string(), expected)
+
+    def test_pretty_string_completed(self) -> None:
+        """Test pretty string output for a requirement marked as completed."""
+        req = Requirement(req_id="REQ-4", description="Completed requirement.", completed=True)
+        expected = "REQ-4: Completed requirement.\n  - completed"
+        self.assertEqual(req.to_pretty_string(), expected)
+
+    def test_pretty_string_all_fields(self) -> None:
+        """Test pretty string output for a requirement with all fields set."""
+        req = Requirement(
+            req_id="REQ-5",
+            description="All fields set.",
+            critical=True,
+            children=["REQ-1", "REQ-2"],
+            completed=True
+        )
+        expected = "REQ-5: All fields set.\n  - critical\n  - children: REQ-1, REQ-2\n  - completed"
+        self.assertEqual(req.to_pretty_string(), expected)
 
 if __name__ == "__main__":
     unittest.main() 
