@@ -1,6 +1,7 @@
 import re
 from typing import List, Dict, Optional
 import os
+import argparse
 
 class Requirement:
     """Represents a requirement parsed from a Markdown block-quote.
@@ -89,4 +90,33 @@ def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
                 if child_id:
                     children.append(child_id)
         requirements.append(Requirement(req_id, description, critical, children))
-    return requirements 
+    return requirements
+
+
+def main():
+    """Entrypoint for the require.py CLI application."""
+    parser = argparse.ArgumentParser(description="require.py - Markdown requirements tracker")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # 'parse' command
+    parse_parser = subparsers.add_parser("parse", help="Parse requirements from a Markdown file and print them.")
+    parse_parser.add_argument("file", type=str, help="Path to the Markdown file to parse.")
+
+    args = parser.parse_args()
+
+    if args.command == "parse":
+        if not os.path.isfile(args.file):
+            print(f"Error: File not found: {args.file}")
+            exit(1)
+        with open(args.file, "r", encoding="utf-8") as f:
+            md_text = f.read()
+        try:
+            requirements = parse_requirements_from_markdown(md_text)
+        except ValueError as e:
+            print(f"Error: {e}")
+            exit(1)
+        for req in requirements:
+            print(req)
+
+if __name__ == "__main__":
+    main() 
