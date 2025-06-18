@@ -11,6 +11,7 @@ import argparse
 import json
 import sys
 from enum import Enum, auto
+import tempfile
 
 
 @dataclass(frozen=True)
@@ -31,10 +32,6 @@ class Requirement:
     critical: bool = False
     children: list[str] = field(default_factory=list)
     completed: bool = False
-
-    def __post_init__(self) -> None:
-        """Post-initialize the Requirement dataclass. No-op, as children is handled by default_factory."""
-        pass
 
     def to_dict(self) -> dict[str, Any]:
         """Return a dictionary representation of the requirement for JSON serialization."""
@@ -82,6 +79,10 @@ class DiffType(Enum):
     ADDED = auto()
     REMOVED = auto()
     CHANGED = auto()
+
+    def __str__(self) -> str:
+        """Return the lowercase name of the DiffType enum member."""
+        return self.name.lower()
 
 
 class CheckResult(NamedTuple):
@@ -171,9 +172,13 @@ def load_lockfile(lockfile_path: Path) -> list[Requirement]:
 
 
 def save_lockfile(lockfile_path: Path, requirements: list[Requirement]) -> None:
-    """Save requirements to a JSON lockfile."""
-    with lockfile_path.open("w", encoding="utf-8") as f:
-        json.dump([req.to_dict() for req in requirements], f, indent=2)
+    """Save requirements to a JSON lockfile atomically."""
+    with tempfile.NamedTemporaryFile(
+        "w", delete=False, dir=lockfile_path.parent, encoding="utf-8"
+    ) as tf:
+        json.dump([req.to_dict() for req in requirements], tf, indent=2)
+        tempname = tf.name
+    Path(tempname).replace(lockfile_path)
 
 
 def diff_requirements(
@@ -201,6 +206,16 @@ def print_scanned_files(md_files: list[Path]) -> None:
     print("🔍 Scanning the following Markdown files:")
     for md_file in md_files:
         print(f"  {md_file}")
+
+
+def print_diff_section(diff_type: str, requirements: list[Requirement], symbol: str) -> None:
+    """Print a section of the diff with a given symbol and requirements list."""
+    if requirements:
+        print(f"{symbol} {diff_type} requirements:")
+        for req in requirements:
+            for i, line in enumerate(req.to_pretty_string().split("\n")):
+                prefix = f"  {symbol} " if i == 0 else "    "
+                print(f"{prefix}{line}")
 
 
 # --- Python API ---
@@ -267,6 +282,64 @@ def api_lock(directory: Optional[str] = None) -> LockResult:
 
 
 # --- CLI Entrypoint ---
+def cli_init(args):
+    """Handle the 'init' CLI command."""
+    init_result = api_init()
+    print_scanned_files(init_result.scanned_files)
+    print(f"✅ Initialized requirements.lock with {len(init_result.requirements)} requirements.")
+
+
+def cli_check(args):
+    """Handle the 'check' CLI command."""
+    try:
+        check_result = api_check()
+    except FileNotFoundError:
+        print("❌ requirements.lock not found. Run 'require.py init' first.")
+        sys.exit(1)
+    print_scanned_files(check_result.scanned_files)
+    diff = check_result.diff
+    if (
+        not diff[DiffType.ADDED]
+        and not diff[DiffType.REMOVED]
+        and not diff[DiffType.CHANGED]
+    ):
+        print("👍 requirements.lock is up-to-date.")
+    else:
+        print_diff_section("Added", diff[DiffType.ADDED], "+")
+        print_diff_section("Removed", diff[DiffType.REMOVED], "-")
+        print_diff_section("Changed", diff[DiffType.CHANGED], "*")
+        sys.exit(2)
+
+
+def cli_lock(args):
+    """Handle the 'lock' CLI command."""
+    dir_path = Path.cwd()
+    lockfile_path = dir_path / "requirements.lock"
+    # Gather new requirements
+    md_files = find_markdown_files(dir_path)
+    requirements: list[Requirement] = []
+    for md_file in md_files:
+        with md_file.open("r", encoding="utf-8") as f:
+            md_text = f.read()
+        reqs = parse_requirements_from_markdown(md_text)
+        requirements.extend(reqs)
+    # Check if lockfile exists and is up-to-date
+    lockfile_exists = lockfile_path.is_file()
+    up_to_date = False
+    if lockfile_exists:
+        try:
+            old_reqs = load_lockfile(lockfile_path)
+            up_to_date = old_reqs == requirements
+        except (FileNotFoundError, json.JSONDecodeError):
+            up_to_date = False
+    print_scanned_files(md_files)
+    if up_to_date:
+        print("👍 requirements.lock is already up-to-date.")
+    else:
+        save_lockfile(lockfile_path, requirements)
+        print(f"✅ requirements.lock updated with {len(requirements)} requirements.")
+
+
 def main() -> None:
     """Parse arguments and run the appropriate CLI command for require.py."""
     parser = argparse.ArgumentParser(
@@ -275,103 +348,27 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # 'init' command
-    subparsers.add_parser(
+    p_init = subparsers.add_parser(
         "init",
         help="Initialize require.py in the current directory and generate requirements.lock.",
     )
+    p_init.set_defaults(func=cli_init)
 
     # 'check' command
-    subparsers.add_parser(
+    p_check = subparsers.add_parser(
         "check",
         help="Check if requirements.lock is up-to-date with Markdown requirements.",
     )
+    p_check.set_defaults(func=cli_check)
 
     # 'lock' command
-    subparsers.add_parser(
+    p_lock = subparsers.add_parser(
         "lock", help="Update requirements.lock to match current Markdown requirements."
     )
+    p_lock.set_defaults(func=cli_lock)
 
     args = parser.parse_args()
-
-    if args.command == "init":
-        init_result = api_init()
-        print_scanned_files(init_result.scanned_files)
-        print(
-            f"✅ Initialized requirements.lock with {len(init_result.requirements)} requirements."
-        )
-
-    elif args.command == "check":
-        try:
-            check_result = api_check()
-        except FileNotFoundError:
-            print("❌ requirements.lock not found. Run 'require.py init' first.")
-            sys.exit(1)
-        print_scanned_files(check_result.scanned_files)
-        diff = check_result.diff
-        if (
-            not diff[DiffType.ADDED]
-            and not diff[DiffType.REMOVED]
-            and not diff[DiffType.CHANGED]
-        ):
-            print("👍 requirements.lock is up-to-date.")
-        else:
-            if diff[DiffType.ADDED]:
-                print("➕ Added requirements:")
-                for req in diff[DiffType.ADDED]:
-                    for line in req.to_pretty_string().split("\n"):
-                        print(
-                            f"  + {line}"
-                            if line == req.to_pretty_string().split("\n")[0]
-                            else f"    {line}"
-                        )
-            if diff[DiffType.REMOVED]:
-                print("➖ Removed requirements:")
-                for req in diff[DiffType.REMOVED]:
-                    for line in req.to_pretty_string().split("\n"):
-                        print(
-                            f"  - {line}"
-                            if line == req.to_pretty_string().split("\n")[0]
-                            else f"    {line}"
-                        )
-            if diff[DiffType.CHANGED]:
-                print("✏️  Changed requirements:")
-                for req in diff[DiffType.CHANGED]:
-                    for line in req.to_pretty_string().split("\n"):
-                        print(
-                            f"  * {line}"
-                            if line == req.to_pretty_string().split("\n")[0]
-                            else f"    {line}"
-                        )
-            sys.exit(2)
-
-    elif args.command == "lock":
-        dir_path = Path.cwd()
-        lockfile_path = dir_path / "requirements.lock"
-        # Gather new requirements
-        md_files = find_markdown_files(dir_path)
-        requirements: list[Requirement] = []
-        for md_file in md_files:
-            with md_file.open("r", encoding="utf-8") as f:
-                md_text = f.read()
-            reqs = parse_requirements_from_markdown(md_text)
-            requirements.extend(reqs)
-        # Check if lockfile exists and is up-to-date
-        lockfile_exists = lockfile_path.is_file()
-        up_to_date = False
-        if lockfile_exists:
-            try:
-                old_reqs = load_lockfile(lockfile_path)
-                up_to_date = old_reqs == requirements
-            except Exception:
-                up_to_date = False
-        print_scanned_files(md_files)
-        if up_to_date:
-            print("👍 requirements.lock is already up-to-date.")
-        else:
-            save_lockfile(lockfile_path, requirements)
-            print(
-                f"✅ requirements.lock updated with {len(requirements)} requirements."
-            )
+    args.func(args)
 
 
 if __name__ == "__main__":
