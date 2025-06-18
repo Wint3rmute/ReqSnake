@@ -170,6 +170,9 @@ def main() -> None:
 
     if args.command == "init":
         md_files = find_markdown_files(os.getcwd())
+        print("Scanning the following Markdown files:")
+        for md_file in md_files:
+            print(f"  {md_file}")
         init_requirements: List[Requirement] = []
         for md_file in md_files:
             with open(md_file, "r", encoding="utf-8") as f:
@@ -188,6 +191,9 @@ def main() -> None:
             print("requirements.lock not found. Run 'require.py init' first.")
             exit(1)
         md_files = find_markdown_files(os.getcwd())
+        print("Scanning the following Markdown files:")
+        for md_file in md_files:
+            print(f"  {md_file}")
         check_requirements: List[Requirement] = []
         for md_file in md_files:
             with open(md_file, "r", encoding="utf-8") as f:
@@ -219,6 +225,9 @@ def main() -> None:
 
     elif args.command == "lock":
         md_files = find_markdown_files(os.getcwd())
+        print("Scanning the following Markdown files:")
+        for md_file in md_files:
+            print(f"  {md_file}")
         lock_requirements: List[Requirement] = []
         for md_file in md_files:
             with open(md_file, "r", encoding="utf-8") as f:
