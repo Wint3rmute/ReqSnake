@@ -24,7 +24,7 @@ And don't get me wrong, there's a ton of amazing Markdown tooling around there:
 - 🦄 Zola
 - ✨ You name it!
 
-However, in my engineering niche, I found a piece missing - possibility to manage system requirements using a markdown-friendly syntax.
+However, in my engineering niche, I found a piece missing - ability to manage system requirements within my Markdown documentation.
 
 ## 🏢 What exists already?
 
@@ -38,11 +38,11 @@ Huge, proprietary programs like:
 - It is a simple Python script
     - No dependencies
     - No strings attached
-- It lets you manage dependencies via Markdown
-    - **Markdown syntax to define a requirement is blockquote-based and well-defined**
+- It lets you manage dependencies/ via Markdown
+    - **Simple blockquote-based syntax for defining requirements, no need to butcher your existing documents**
 - It is smart about change tracking
-    - It simply uses `git`
-    - It keeps a `requirements.lock` file for more fine-grained change detection
+    - ...yeah we just commit a lockfile to `git`
+    - `requirements.lock` file is used for change detection
     - It can warn you about deleting important dependencies
 
 ## ✍️ Requirements Syntax Example
@@ -87,22 +87,7 @@ Example:
     - If there are changes, the difference between `requirements.lock` file and the currently defined requirements will be displayed, including the file path for each changed requirement.
 - `reqsnake.py lock` — will update the `requirements.lock` file to reflect the currently defined requirements in your Markdown files. If nothing has changed, the lockfile is left untouched.
 
-## ❓ Questions to be asked
+## ⭐ Additional reading
 
-- How to mark requirements so that it is human-readable and markdown-friendly?
-    - Use blockquotes and IDs like `ABC-123`
-    - For example, when making a plane:
-        - `MECH-123` would be a requirement for the mechanical team
-        - `AVIO-15` would be something for avionics
-        - `SW-33` would be on-board software for the plane
-- How to generate a lockfile with all defined requirements at a given point in time?
-    - This is done with `reqsnake.py init` and produces a JSON file
-- How to mark some requirements as `critical`, so that `reqsnake.py` throws an error if they are ever removed?
-    - Add `critical` as an attribute in the blockquote
-- How to mark some requirements as children of other requirements?
-    - Use `child-of` attributes (no cycles allowed)
-- How to mark requirements as `completed`?
-    - Add `completed` as an attribute in the blockquote
-- How to track completion status of requirements and their child requirements?
-    - Use the `completed` attribute and the hierarchy features
-
+- [ARCHITECTURE.md](./ARCHITECTURE.md) for how I structure the code
+- [NOTES.md](./NOTES.md) for my working notes
