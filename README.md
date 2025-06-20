@@ -2,6 +2,8 @@
 
 ReqSnake is a dead-simple Python script for tracking requirements defined in a set of Markdown documents.
 
+![Image containing requirements status report and a requirements diagram](./docs/demo.jpg)
+
 ## 📄 But what is a requirement?
 
 Citing [Wikipedia](https://en.wikipedia.org/wiki/Requirements_management):
