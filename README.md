@@ -42,7 +42,7 @@ Huge, proprietary programs like:
     - **Simple blockquote-based syntax for defining requirements, no need to butcher your existing documents**
 - It is smart about change tracking
     - ...yeah we just commit a lockfile to `git`
-    - `requirements.lock` file is used for change detection
+    - `reqsnake.lock` file is used for change detection
     - It can warn you about deleting important dependencies
 
 ## ✍️ Requirements Syntax Example
@@ -71,9 +71,9 @@ Example:
 - **No dependencies:** Only the Python standard library is used.
 - **Blockquote-based Markdown syntax:** Human-readable, easy to edit.
 - **Requirements hierarchy:** Use `child-of` to define relationships.
-- **Change tracking:** Uses a `requirements.lock` file for precise diffing.
+- **Change tracking:** Uses a `reqsnake.lock` file for precise diffing.
 - **CLI commands:**
-    - `reqsnake.py init` — scan Markdown files and generate `requirements.lock`.
+    - `reqsnake.py init` — scan Markdown files and generate `reqsnake.lock`.
     - `reqsnake.py check` — compare the lockfile to Markdown requirements. Shows which file each changed requirement comes from.
     - `reqsnake.py lock` — update the lockfile. Idempotent: only updates if needed.
 - **Validation workflow:** All changes are validated with `./check.sh` (runs tests, type checks, and linter).
@@ -82,10 +82,10 @@ Example:
 ## ⚡ Quick Start example
 
 - `reqsnake.py init` — initialize ReqSnake in the current working directory
-    - This will scan the existing directory for Markdown files and generate a `requirements.lock`
-- `reqsnake.py check` — will read the current `requirements.lock` file and check if it is up-to-date with the requirements defined in the Markdown documentation in your working directory.
-    - If there are changes, the difference between `requirements.lock` file and the currently defined requirements will be displayed, including the file path for each changed requirement.
-- `reqsnake.py lock` — will update the `requirements.lock` file to reflect the currently defined requirements in your Markdown files. If nothing has changed, the lockfile is left untouched.
+    - This will scan the existing directory for Markdown files and generate a `reqsnake.lock`
+- `reqsnake.py check` — will read the current `reqsnake.lock` file and check if it is up-to-date with the requirements defined in the Markdown documentation in your working directory.
+    - If there are changes, the difference between `reqsnake.lock` file and the currently defined requirements will be displayed, including the file path for each changed requirement.
+- `reqsnake.py lock` — will update the `reqsnake.lock` file to reflect the currently defined requirements in your Markdown files. If nothing has changed, the lockfile is left untouched.
 
 ## ⭐ Additional reading
 

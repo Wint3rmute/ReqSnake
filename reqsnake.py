@@ -245,7 +245,7 @@ def _load_lockfile(lockfile_path: Path) -> list[Requirement]:
         data = json.load(f)
     if not (isinstance(data, dict) and "version" in data and "requirements" in data):
         raise ValueError(
-            "requirements.lock is missing required 'version' or 'requirements' fields. Please regenerate the lockfile with 'reqsnake.py init'."
+            "reqsnake.lock is missing required 'version' or 'requirements' fields. Please regenerate the lockfile with 'reqsnake.py init'."
         )
     reqs = data["requirements"]
     return [Requirement.from_dict(item) for item in reqs]
@@ -452,7 +452,7 @@ def _validate_no_cycles(requirements: list[Requirement]) -> None:
 
 # --- Python API ---
 def reqsnake_init(directory: Optional[str] = None) -> InitResult:
-    """Scan Markdown files and create requirements.lock."""
+    """Scan Markdown files and create reqsnake.lock."""
     dir_path = Path(directory) if directory else Path.cwd()
     md_files = _find_markdown_files(dir_path)
     requirements: list[Requirement] = []
@@ -463,7 +463,7 @@ def reqsnake_init(directory: Optional[str] = None) -> InitResult:
         requirements.extend(reqs)
     _validate_no_cycles(requirements)
     _validate_completed_children(requirements)
-    lockfile_path = dir_path / "requirements.lock"
+    lockfile_path = dir_path / "reqsnake.lock"
     _save_lockfile(lockfile_path, requirements)
     return InitResult(md_files, requirements)
 
@@ -471,11 +471,11 @@ def reqsnake_init(directory: Optional[str] = None) -> InitResult:
 def reqsnake_check(
     directory: Optional[str] = None,
 ) -> Tuple[CheckResult, Dict[str, Path]]:
-    """Scan Markdown files and compare to requirements.lock, returning file info for each requirement."""
+    """Scan Markdown files and compare to reqsnake.lock, returning file info for each requirement."""
     dir_path = Path(directory) if directory else Path.cwd()
-    lockfile_path = dir_path / "requirements.lock"
+    lockfile_path = dir_path / "reqsnake.lock"
     if not lockfile_path.is_file():
-        raise FileNotFoundError("requirements.lock not found. Run 'init' first.")
+        raise FileNotFoundError("reqsnake.lock not found. Run 'init' first.")
     md_files = _find_markdown_files(dir_path)
     parsed_reqs: list[ParsedRequirement] = []
     for md_file in md_files:
@@ -492,7 +492,7 @@ def reqsnake_check(
 
 
 def reqsnake_lock(directory: Optional[str] = None) -> LockResult:
-    """Scan Markdown files and update requirements.lock."""
+    """Scan Markdown files and update reqsnake.lock."""
     dir_path = Path(directory) if directory else Path.cwd()
     md_files = _find_markdown_files(dir_path)
     requirements: list[Requirement] = []
@@ -503,7 +503,7 @@ def reqsnake_lock(directory: Optional[str] = None) -> LockResult:
         requirements.extend(reqs)
     _validate_completed_children(requirements)
     _validate_no_cycles(requirements)
-    lockfile_path = dir_path / "requirements.lock"
+    lockfile_path = dir_path / "reqsnake.lock"
     # Check if lockfile exists and is up-to-date
     lockfile_exists = lockfile_path.is_file()
     up_to_date = False
@@ -515,15 +515,15 @@ def reqsnake_lock(directory: Optional[str] = None) -> LockResult:
             up_to_date = False
     _print_scanned_files(md_files)
     if up_to_date:
-        print("👍 requirements.lock is already up-to-date.")
+        print("👍 reqsnake.lock is already up-to-date.")
     else:
         _save_lockfile(lockfile_path, requirements)
-        print(f"✅ requirements.lock updated with {len(requirements)} requirements.")
+        print(f"✅ reqsnake.lock updated with {len(requirements)} requirements.")
     return LockResult(md_files, requirements)
 
 
 def reqsnake_status(directory: Optional[str] = None) -> StatusResult:
-    """Scan Markdown files and return status information about requirements.
+    """Scan Markdown files and return status information about reqsnake.lock.
 
     Args:
         directory: Optional directory path. Defaults to current working directory.
@@ -532,13 +532,13 @@ def reqsnake_status(directory: Optional[str] = None) -> StatusResult:
         StatusResult: Requirements with file associations and status summary.
 
     Raises:
-        FileNotFoundError: If requirements.lock not found.
+        FileNotFoundError: If reqsnake.lock not found.
 
     """
     dir_path = Path(directory) if directory else Path.cwd()
-    lockfile_path = dir_path / "requirements.lock"
+    lockfile_path = dir_path / "reqsnake.lock"
     if not lockfile_path.is_file():
-        raise FileNotFoundError("requirements.lock not found. Run 'init' first.")
+        raise FileNotFoundError("reqsnake.lock not found. Run 'init' first.")
 
     # Load requirements from lockfile
     lock_reqs = _load_lockfile(lockfile_path)
@@ -709,7 +709,7 @@ def cli_init(args: argparse.Namespace) -> None:
     init_result = reqsnake_init()
     _print_scanned_files(init_result.scanned_files)
     print(
-        f"✅ Initialized requirements.lock with {len(init_result.requirements)} requirements."
+        f"✅ Initialized reqsnake.lock with {len(init_result.requirements)} requirements."
     )
 
 
@@ -718,7 +718,7 @@ def cli_check(args: argparse.Namespace) -> None:
     try:
         check_result, req_id_to_file = reqsnake_check()
     except FileNotFoundError:
-        print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
+        print("❌ reqsnake.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
     _print_scanned_files(check_result.scanned_files)
     diff = check_result.diff
@@ -742,7 +742,7 @@ def cli_check(args: argparse.Namespace) -> None:
         and not diff[DiffType.REMOVED]
         and not diff[DiffType.CHANGED]
     ):
-        print("👍 requirements.lock is up-to-date.")
+        print("👍 reqsnake.lock is up-to-date.")
     else:
         print_diff_with_file("Added", diff[DiffType.ADDED], "+")
         print_diff_with_file("Removed", diff[DiffType.REMOVED], "-")
@@ -753,7 +753,7 @@ def cli_check(args: argparse.Namespace) -> None:
 def cli_lock(args: argparse.Namespace) -> None:
     """Handle the 'lock' CLI command."""
     dir_path = Path.cwd()
-    lockfile_path = dir_path / "requirements.lock"
+    lockfile_path = dir_path / "reqsnake.lock"
     # Gather new requirements
     md_files = _find_markdown_files(dir_path)
     requirements: list[Requirement] = []
@@ -775,10 +775,10 @@ def cli_lock(args: argparse.Namespace) -> None:
             up_to_date = False
     _print_scanned_files(md_files)
     if up_to_date:
-        print("👍 requirements.lock is already up-to-date.")
+        print("👍 reqsnake.lock is already up-to-date.")
     else:
         _save_lockfile(lockfile_path, requirements)
-        print(f"✅ requirements.lock updated with {len(requirements)} requirements.")
+        print(f"✅ reqsnake.lock updated with {len(requirements)} requirements.")
 
 
 def cli_status(args: argparse.Namespace) -> None:
@@ -786,7 +786,7 @@ def cli_status(args: argparse.Namespace) -> None:
     try:
         status_result = reqsnake_status()
     except FileNotFoundError:
-        print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
+        print("❌ reqsnake.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
 
     _print_status_summary(status_result)
@@ -799,7 +799,7 @@ def cli_status_md(args: argparse.Namespace) -> None:
     try:
         status_result = reqsnake_status()
     except FileNotFoundError:
-        print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
+        print("❌ reqsnake.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
     output_path = (
         Path(args.output)
@@ -814,9 +814,9 @@ def cli_status_md(args: argparse.Namespace) -> None:
 def cli_visual_dot(args: argparse.Namespace) -> None:
     """Handle the 'visual-dot' CLI command."""
     dir_path = Path.cwd()
-    lockfile_path = dir_path / "requirements.lock"
+    lockfile_path = dir_path / "reqsnake.lock"
     if not lockfile_path.is_file():
-        print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
+        print("❌ reqsnake.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
     output_path = (
         Path(args.output)

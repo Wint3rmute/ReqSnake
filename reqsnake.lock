@@ -17,7 +17,7 @@
     },
     {
       "req_id": "REQ-CORE-3",
-      "description": "The tool shall store requirements in a requirements.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.",
+      "description": "The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.",
       "critical": true,
       "children": [],
       "completed": false
@@ -66,7 +66,7 @@
     },
     {
       "req_id": "REQ-OUTPUT-1",
-      "description": "The CLI shall provide a command to generate a Markdown file containing the status of all currently defined requirements, relying solely on the requirements.lock file. The output shall be suitable for inclusion in documentation or reports.",
+      "description": "The CLI shall provide a command to generate a Markdown file containing the status of all currently defined requirements, relying solely on the reqsnake.lock file. The output shall be suitable for inclusion in documentation or reports.",
       "critical": false,
       "children": [
         "REQ-CORE-9"
@@ -75,7 +75,7 @@
     },
     {
       "req_id": "REQ-OUTPUT-2",
-      "description": "The tool shall provide a command to generate a Graphviz diagram (in dot format) representing the requirements hierarchy, using the requirements.lock file as input. The output shall be suitable for visualization tools and similar in spirit to the status-md command.",
+      "description": "The tool shall provide a command to generate a Graphviz diagram (in dot format) representing the requirements hierarchy, using the reqsnake.lock file as input. The output shall be suitable for visualization tools and similar in spirit to the status-md command.",
       "critical": false,
       "children": [
         "REQ-CORE-9"
@@ -84,7 +84,7 @@
     },
     {
       "req_id": "REQ-OUTPUT-3",
-      "description": "The requirements.lock file shall contain the version of application which generated it.",
+      "description": "The reqsnake.lock file shall contain the version of application which generated it.",
       "critical": false,
       "children": [
         "REQ-CORE-3"
@@ -112,7 +112,7 @@
     },
     {
       "req_id": "REQ-TEST-3",
-      "description": "Integration tests shall verify that requirements.lock is updated when Markdown files are changed.",
+      "description": "Integration tests shall verify that reqsnake.lock is updated when Markdown files are changed.",
       "critical": false,
       "children": [
         "REQ-CORE-1"
@@ -148,7 +148,7 @@
     },
     {
       "req_id": "REQ-CLI-3",
-      "description": "When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., \"requirements.lock is already up-to-date.\"). Only print the \"requirements.lock updated\" message if the lockfile was actually changed.",
+      "description": "When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., \"reqsnake.lock is already up-to-date.\"). Only print the \"reqsnake.lock updated\" message if the lockfile was actually changed.",
       "critical": false,
       "children": [
         "REQ-CLI-1"
