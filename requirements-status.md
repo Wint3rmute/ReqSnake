@@ -3,22 +3,22 @@
 ## Summary
 
 - **Total requirements:** 44
-- **Completed:** 0/44 (0.0%)
+- **Completed:** 3/44 (6.8%)
 - **Critical requirements:** 10
 - **Critical completed:** 0/10 (0.0%)
 
 ## Requirements by File
 
 ### /home/wint3rmute/require.py/requirements/REQ-CLI.md
-- **Completed:** 0/9 (0.0%)
+- **Completed:** 3/9 (33.3%)
 
 - ⏳ **REQ-CLI-1**: The CLI shall support the commands: init, check, lock, and status. _(children: REQ-CORE-4)_
 - ⏳ **REQ-CLI-2**: The CLI shall print the Markdown files being scanned during operations. _(children: REQ-CLI-1)_
-- ⏳ **REQ-CLI-3**: When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "reqsnake.lock is already up-to-date."). Only print the "reqsnake.lock updated" message if the lockfile was actually changed. _(children: REQ-CLI-1)_
-- ⏳ **REQ-CLI-4**: When displaying changed requirements with `reqsnake.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change _(children: REQ-CLI-1)_
+- ✅ **REQ-CLI-3**: When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "reqsnake.lock is already up-to-date."). Only print the "reqsnake.lock updated" message if the lockfile was actually changed. _(children: REQ-CLI-1)_
+- ✅ **REQ-CLI-4**: When displaying changed requirements with `reqsnake.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change _(children: REQ-CLI-1)_
 - ⏳ **REQ-CLI-5**: The application shall allow for specification of filesystem paths to be ignored during requirements scanning. A file `.requirementsignore` shall be used to specify the list of filesystem paths to ignore, similar to how .gitignore works
 - ⏳ **REQ-CLI-6**: The CLI shall provide a `status` command that displays completion status of requirements. _(children: REQ-CLI-2, REQ-CORE-9)_
-- ⏳ **REQ-CLI-7**: The `status` command shall display total requirements count, completed requirements count and percentage, and critical requirements status. _(children: REQ-CLI-6)_
+- ✅ **REQ-CLI-7**: The `status` command shall display total requirements count, completed requirements count and percentage, and critical requirements status. _(children: REQ-CLI-6)_
 - ⏳ **REQ-CLI-8**: The `status` command shall group requirements by source file and show completion status for each file. _(children: REQ-CLI-6)_
 - ⏳ **REQ-CLI-9**: The `status` command shall display hierarchical completion status showing parent-child relationships with visual indicators. _(children: REQ-CLI-6)_
 
@@ -75,14 +75,14 @@
 
 ## Hierarchical Status
 
-- ⏳ **REQ-CLI-3**: When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "reqsnake.lock is already up-to-date."). Only print the "reqsnake.lock updated" message if the lockfile was actually changed. _(children: REQ-CLI-1)_
+- ✅ **REQ-CLI-3**: When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "reqsnake.lock is already up-to-date."). Only print the "reqsnake.lock updated" message if the lockfile was actually changed. _(children: REQ-CLI-1)_
   - ⏳ **REQ-CLI-1**: The CLI shall support the commands: init, check, lock, and status. _(children: REQ-CORE-4)_
     - ⏳ ⚠️ **REQ-CORE-4**: The tool shall provide a command-line interface (CLI) for managing requirements.
-- ⏳ **REQ-CLI-4**: When displaying changed requirements with `reqsnake.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change _(children: REQ-CLI-1)_
+- ✅ **REQ-CLI-4**: When displaying changed requirements with `reqsnake.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change _(children: REQ-CLI-1)_
   - ⏳ **REQ-CLI-1**: The CLI shall support the commands: init, check, lock, and status. _(children: REQ-CORE-4)_
     - ⏳ ⚠️ **REQ-CORE-4**: The tool shall provide a command-line interface (CLI) for managing requirements.
 - ⏳ **REQ-CLI-5**: The application shall allow for specification of filesystem paths to be ignored during requirements scanning. A file `.requirementsignore` shall be used to specify the list of filesystem paths to ignore, similar to how .gitignore works
-- ⏳ **REQ-CLI-7**: The `status` command shall display total requirements count, completed requirements count and percentage, and critical requirements status. _(children: REQ-CLI-6)_
+- ✅ **REQ-CLI-7**: The `status` command shall display total requirements count, completed requirements count and percentage, and critical requirements status. _(children: REQ-CLI-6)_
   - ⏳ **REQ-CLI-6**: The CLI shall provide a `status` command that displays completion status of requirements. _(children: REQ-CLI-2, REQ-CORE-9)_
     - ⏳ **REQ-CLI-2**: The CLI shall print the Markdown files being scanned during operations. _(children: REQ-CLI-1)_
       - ⏳ **REQ-CLI-1**: The CLI shall support the commands: init, check, lock, and status. _(children: REQ-CORE-4)_

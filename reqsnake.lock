@@ -153,7 +153,7 @@
       "children": [
         "REQ-CLI-1"
       ],
-      "completed": false
+      "completed": true
     },
     {
       "req_id": "REQ-CLI-4",
@@ -162,7 +162,7 @@
       "children": [
         "REQ-CLI-1"
       ],
-      "completed": false
+      "completed": true
     },
     {
       "req_id": "REQ-CLI-5",
@@ -188,7 +188,7 @@
       "children": [
         "REQ-CLI-6"
       ],
-      "completed": false
+      "completed": true
     },
     {
       "req_id": "REQ-CLI-8",
