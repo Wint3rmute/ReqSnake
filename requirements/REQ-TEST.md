@@ -9,7 +9,7 @@
 > child-of: REQ-CORE-1
 
 > REQ-TEST-3
-> Integration tests shall verify that requirements.lock is updated when Markdown files are changed.
+> Integration tests shall verify that reqsnake.lock is updated when Markdown files are changed.
 > child-of: REQ-CORE-1
 
 > REQ-TEST-4

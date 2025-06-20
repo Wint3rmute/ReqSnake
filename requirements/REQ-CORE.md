@@ -7,7 +7,7 @@
 > critical
 
 > REQ-CORE-3
-> The tool shall store requirements in a requirements.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.
+> The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.
 > critical
 
 > REQ-CORE-4

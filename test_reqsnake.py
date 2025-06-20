@@ -208,7 +208,7 @@ class TestRequirePyScenarios(unittest.TestCase):
             reqs_md.write_text(md_content)
             files, reqs = reqsnake_init(tmpdir)
             self.assertIn(test_dir_path / "reqs.md", files)
-            lockfile_path = test_dir_path / "requirements.lock"
+            lockfile_path = test_dir_path / "reqsnake.lock"
             self.assertTrue(lockfile_path.exists())
             data = json.loads(lockfile_path.read_text())
             self.assertEqual(len(data["requirements"]), 2)
@@ -219,14 +219,14 @@ class TestRequirePyScenarios(unittest.TestCase):
             self.assertEqual(data, data2)
 
     def test_add_requirement_updates_lockfile(self) -> None:
-        """Test that requirements are added to requirements.lock when Markdown files are updated."""
+        """Test that requirements are added to reqsnake.lock when Markdown files are updated."""
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
             md_content = "> REQ-1\n> The first requirement.\n> critical\n"
             md_path = test_dir_path / "reqs.md"
             md_path.write_text(md_content)
             reqsnake_init(tmpdir)
-            lockfile_path = test_dir_path / "requirements.lock"
+            lockfile_path = test_dir_path / "reqsnake.lock"
             data = json.loads(lockfile_path.read_text())
             self.assertEqual(len(data["requirements"]), 1)
             self.assertEqual(data["requirements"][0]["req_id"], "REQ-1")
@@ -261,7 +261,7 @@ class TestRequirePyScenarios(unittest.TestCase):
             md_path = test_dir_path / "reqs.md"
             md_path.write_text(md_content)
             reqsnake_init(tmpdir)
-            lockfile_path = test_dir_path / "requirements.lock"
+            lockfile_path = test_dir_path / "reqsnake.lock"
             data_1 = json.loads(lockfile_path.read_text())
             reqsnake_lock(tmpdir)
             data_2 = json.loads(lockfile_path.read_text())
@@ -533,7 +533,7 @@ class TestStatusCommand(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             with self.assertRaises(FileNotFoundError) as context:
                 reqsnake_status(tmpdir)
-            self.assertIn("requirements.lock not found", str(context.exception))
+            self.assertIn("reqsnake.lock not found", str(context.exception))
 
     def test_reqsnake_status_with_hierarchical_requirements(self) -> None:
         """Test reqsnake_status with parent-child relationships using valid ASCII IDs."""
@@ -673,7 +673,7 @@ class TestStatusCommand(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 1)
-            self.assertIn("requirements.lock not found", result.stdout)
+            self.assertIn("reqsnake.lock not found", result.stdout)
 
     def test_status_with_empty_requirements(self) -> None:
         """Test status functionality with no requirements."""
@@ -712,7 +712,7 @@ class TestStatusCommand(unittest.TestCase):
             md_path = test_dir_path / "reqs.md"
             md_path.write_text(md_content)
 
-            # Run init to create requirements.lock
+            # Run init to create reqsnake.lock
             subprocess.run(
                 [sys.executable, reqsnake_py, "init"],
                 cwd=tmpdir,
@@ -760,7 +760,7 @@ class TestStatusCommand(unittest.TestCase):
             reqsnake_init(tmpdir)
 
     def test_visual_dot_generation(self) -> None:
-        """REQ-VISUAL-1: The tool shall generate a Graphviz dot file from requirements.lock."""
+        """REQ-VISUAL-1: The tool shall generate a Graphviz dot file from reqsnake.lock."""
         import subprocess
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -798,14 +798,14 @@ class TestLockfileVersion(unittest.TestCase):
     """Tests for lockfile version field and format requirements in ReqSnake."""
 
     def test_lockfile_contains_version(self) -> None:
-        """REQ-OUTPUT-3: requirements.lock contains the version of ReqSnake that generated it."""
+        """REQ-OUTPUT-3: reqsnake.lock contains the version of ReqSnake that generated it."""
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
             md_content = "> REQ-1\n> Test requirement.\n"
             reqs_md = test_dir_path / "reqs.md"
             reqs_md.write_text(md_content)
             reqsnake_init(tmpdir)
-            lockfile_path = test_dir_path / "requirements.lock"
+            lockfile_path = test_dir_path / "reqsnake.lock"
             data = json.loads(lockfile_path.read_text())
             self.assertIn("version", data)
             self.assertEqual(data["version"], reqsnake.__version__)
