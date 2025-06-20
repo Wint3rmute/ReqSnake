@@ -663,7 +663,7 @@ def _generate_status_markdown(status_result: StatusResult) -> str:
     return "\n".join(lines)
 
 
-def _generate_dot_from_lockfile(lockfile_path: Path, output_path: Path) -> None:
+def _generate_graphviz(lockfile_path: Path, output_path: Path) -> None:
     """Generate a Graphviz dot file representing the requirements hierarchy."""
     requirements = _load_lockfile(lockfile_path)
     req_dict = {r.req_id: r for r in requirements}
@@ -671,6 +671,7 @@ def _generate_dot_from_lockfile(lockfile_path: Path, output_path: Path) -> None:
     # Add nodes
     for req in requirements:
         label = req.req_id.replace('"', "")
+        description_sanitized = req.description.replace('"', "")[:20] + "..."
         node_label = f"{label}"
         attrs = []
         if req.critical:
@@ -679,7 +680,7 @@ def _generate_dot_from_lockfile(lockfile_path: Path, output_path: Path) -> None:
             attrs.append("style=filled fillcolor=lightgreen")
         attr_str = (",".join(attrs)) if attrs else ""
         lines.append(
-            f'    "{req.req_id}" [label="{node_label}"{(", "+attr_str) if attr_str else ""}];'
+            f'    "{req.req_id}" [label="{node_label} \n {description_sanitized} "{(", "+attr_str) if attr_str else ""}];'
         )
     # Add edges
     for req in requirements:
@@ -808,9 +809,9 @@ def cli_visual_dot(args: argparse.Namespace) -> None:
     output_path = (
         Path(args.output)
         if hasattr(args, "output") and args.output
-        else Path("requirements-visual.dot")
+        else Path("requirements.gv")
     )
-    _generate_dot_from_lockfile(lockfile_path, output_path)
+    _generate_graphviz(lockfile_path, output_path)
     print(f"✅ Requirements Graphviz dot file written to {output_path}")
 
 
@@ -876,8 +877,8 @@ def main() -> None:
     p_visual_dot.add_argument(
         "-o",
         "--output",
-        default="requirements-visual.dot",
-        help="Output dot file (default: requirements-visual.dot)",
+        default="requirements.gv",
+        help="Output dot file (default: requirements.gv)",
     )
     p_visual_dot.set_defaults(func=cli_visual_dot)
 
