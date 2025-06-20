@@ -820,36 +820,36 @@ class TestProgressBar(unittest.TestCase):
 
     def test_zero_total(self) -> None:
         """Bar is empty when total is zero, regardless of completed."""
-        self.assertEqual(_progress_bar(0, 0), "[                    ]")
-        self.assertEqual(_progress_bar(5, 0), "[                    ]")
+        self.assertEqual(_progress_bar(0, 0), "`[                    ]`")
+        self.assertEqual(_progress_bar(5, 0), "`[                    ]`")
 
     def test_zero_completed(self) -> None:
         """Bar is empty when completed is zero."""
-        self.assertEqual(_progress_bar(0, 10), "[                    ]")
+        self.assertEqual(_progress_bar(0, 10), "`[                    ]`")
 
     def test_full_completed(self) -> None:
         """Bar is full when completed equals total."""
-        self.assertEqual(_progress_bar(10, 10), "[████████████████████]")
+        self.assertEqual(_progress_bar(10, 10), "`[████████████████████]`")
 
     def test_half_completed(self) -> None:
         """Bar is half full when completed is half of total."""
-        self.assertTrue(_progress_bar(10, 20).startswith("[██████████"))
-        self.assertIn("          ]", _progress_bar(10, 20))
+        self.assertTrue(_progress_bar(10, 20).startswith("`[██████████"))
+        self.assertIn("          ]`", _progress_bar(10, 20))
 
     def test_partial_block(self) -> None:
         """Bar shows a partial unicode block for non-integer progress."""
         bar = _progress_bar(7, 16, width=8)
-        self.assertTrue(bar.startswith("[███"))
+        self.assertTrue(bar.startswith("`[███"))
         self.assertRegex(bar, r"[▏▎▍▌▋▊▉]")  # Should have a partial block
 
     def test_width_one(self) -> None:
         """Bar works with width=1."""
-        self.assertIn("[", _progress_bar(1, 2, width=1))
-        self.assertIn("]", _progress_bar(1, 2, width=1))
+        self.assertIn("`[", _progress_bar(1, 2, width=1))
+        self.assertIn("]`", _progress_bar(1, 2, width=1))
 
     def test_overflow(self) -> None:
         """Bar is full if completed > total (overflow)."""
-        self.assertEqual(_progress_bar(15, 10), "[████████████████████]")
+        self.assertEqual(_progress_bar(15, 10), "`[████████████████████]`")
 
 
 class TestStatusMDRelativePaths(unittest.TestCase):

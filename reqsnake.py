@@ -19,7 +19,7 @@ __version__ = "1.0.0"
 
 def _progress_bar(completed: int, total: int, width: int = 20) -> str:
     if total <= 0:
-        return "[" + (" " * width) + "]"
+        return "`[" + (" " * width) + "]`"
     # Unicode 1/8 blocks: ▏▎▍▌▋▊▉█
     blocks = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"]
     frac = min(max(completed / total, 0), 1)  # Clamp between 0 and 1
@@ -706,11 +706,16 @@ def _generate_graphviz(lockfile_path: Path, output_path: Path) -> None:
     """Generate a Graphviz dot file representing the requirements hierarchy."""
     requirements = _load_lockfile(lockfile_path)
     req_dict = {r.req_id: r for r in requirements}
-    lines = ["digraph requirements {"]
+    lines = [
+        "digraph requirements {",
+        "splines=ortho",
+        "overlap = scale;"
+        'node [shape=box, fillcolor="#e0e0e0", fontname="Helvetica", fontsize=11, margin="0.15,0.1", penwidth=1.5, color="#555555"]',
+    ]
     # Add nodes
     for req in requirements:
         label = req.req_id.replace('"', "")
-        description_sanitized = req.description.replace('"', "")[:20] + "..."
+        description_sanitized = req.description.replace('"', "")[:30] + "..."
         node_label = f"{label}"
         attrs = []
         if req.critical:

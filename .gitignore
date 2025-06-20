@@ -1,5 +1,7 @@
 # ReqSnake's generated files
 requirements.gv
+out.jpg
+out.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
