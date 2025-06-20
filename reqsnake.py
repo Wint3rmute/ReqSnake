@@ -12,9 +12,28 @@ import json
 import sys
 from enum import Enum, auto
 import tempfile
+import os
 
-# Add a version string at the top of the file
 __version__ = "1.0.0"
+
+
+def _progress_bar(completed: int, total: int, width: int = 20) -> str:
+    if total <= 0:
+        return "[" + (" " * width) + "]"
+    # Unicode 1/8 blocks: ▏▎▍▌▋▊▉█
+    blocks = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"]
+    frac = min(max(completed / total, 0), 1)  # Clamp between 0 and 1
+    total_blocks = frac * width
+    full_blocks = int(total_blocks)
+    partial_block_idx = int((total_blocks - full_blocks) * 8)
+    bar = "█" * full_blocks
+    if full_blocks < width:
+        if partial_block_idx > 0:
+            bar += blocks[partial_block_idx]
+            bar += " " * (width - full_blocks - 1)
+        else:
+            bar += " " * (width - full_blocks)
+    return f"`[{bar}]`"
 
 
 @dataclass(frozen=True)
@@ -590,7 +609,7 @@ def _parse_requirements_from_file(md_file: Path) -> list[ParsedRequirement]:
 
 
 def _generate_status_markdown(status_result: StatusResult) -> str:
-    """Generate a Markdown report of requirements status from a StatusResult."""
+    """Generate a Markdown report of requirements status from a StatusResult, with unicode block progress bars."""
     lines = []
     # Summary
     total = status_result.total_count
@@ -604,10 +623,12 @@ def _generate_status_markdown(status_result: StatusResult) -> str:
     lines.append("# Requirements Status Report\n")
     lines.append("## Summary\n")
     lines.append(f"- **Total requirements:** {total}")
-    lines.append(f"- **Completed:** {completed}/{total} ({completion_percentage:.1f}%)")
+    lines.append(
+        f"- **Completed:** {completed}/{total} ({completion_percentage:.1f}%) {_progress_bar(completed, total)}"
+    )
     lines.append(f"- **Critical requirements:** {critical}")
     lines.append(
-        f"- **Critical completed:** {critical_completed}/{critical} ({critical_completion_percentage:.1f}%)\n"
+        f"- **Critical completed:** {critical_completed}/{critical} ({critical_completion_percentage:.1f}%) {_progress_bar(critical_completed, critical)}\n"
     )
 
     # By file
@@ -615,16 +636,22 @@ def _generate_status_markdown(status_result: StatusResult) -> str:
     file_groups: dict[Path, list[ParsedRequirement]] = {}
     for pr in status_result.requirements:
         file_groups.setdefault(pr.source_file, []).append(pr)
+    cwd = Path.cwd()
     for file_path in sorted(file_groups.keys()):
+        try:
+            rel_path = file_path.relative_to(cwd)
+        except ValueError:
+            rel_path = file_path
         reqs = file_groups[file_path]
         completed_count = sum(1 for pr in reqs if pr.requirement.completed)
         total_count = len(reqs)
         completion_percentage = (
             (completed_count / total_count) * 100 if total_count > 0 else 0
         )
-        lines.append(f"### {file_path}")
+        lines.append(f"### {rel_path}")
         lines.append(
-            f"- **Completed:** {completed_count}/{total_count} ({completion_percentage:.1f}%)\n"
+            f"**Completed:** {completed_count}/{total_count} ({completion_percentage:.1f}%) "
+            f"{_progress_bar(completed_count, total_count)}\n"
         )
         for pr in reqs:
             req = pr.requirement

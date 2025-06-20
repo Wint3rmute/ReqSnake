@@ -3,9 +3,13 @@
 > child-of: REQ-CORE-9
 
 > REQ-OUTPUT-2
+> The generated Markdown status file shall contain paths to files containing the requirements. They shall be displayed as relative to the current working directory.
+> child-of: REQ-OUTPUT-1
+
+> REQ-OUTPUT-3
 > The tool shall provide a command to generate a Graphviz diagram (in dot format) representing the requirements hierarchy, using the reqsnake.lock file as input. The output shall be suitable for visualization tools and similar in spirit to the status-md command. 
 > child-of: REQ-CORE-9
 
-> REQ-OUTPUT-3
+> REQ-OUTPUT-4
 > The reqsnake.lock file shall contain the version of application which generated it.
 > child-of: REQ-CORE-3

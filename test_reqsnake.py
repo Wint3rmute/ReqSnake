@@ -12,6 +12,7 @@ from reqsnake import (
     reqsnake_lock,
     reqsnake_status,
     StatusResult,
+    _progress_bar,
 )
 from pathlib import Path
 import subprocess
@@ -812,6 +813,79 @@ class TestLockfileVersion(unittest.TestCase):
             self.assertIn("requirements", data)
             self.assertEqual(len(data["requirements"]), 1)
             self.assertEqual(data["requirements"][0]["req_id"], "REQ-1")
+
+
+class TestProgressBar(unittest.TestCase):
+    """Unit tests for the _progress_bar function (unicode progress bar rendering)."""
+
+    def test_zero_total(self) -> None:
+        """Bar is empty when total is zero, regardless of completed."""
+        self.assertEqual(_progress_bar(0, 0), "[                    ]")
+        self.assertEqual(_progress_bar(5, 0), "[                    ]")
+
+    def test_zero_completed(self) -> None:
+        """Bar is empty when completed is zero."""
+        self.assertEqual(_progress_bar(0, 10), "[                    ]")
+
+    def test_full_completed(self) -> None:
+        """Bar is full when completed equals total."""
+        self.assertEqual(_progress_bar(10, 10), "[████████████████████]")
+
+    def test_half_completed(self) -> None:
+        """Bar is half full when completed is half of total."""
+        self.assertTrue(_progress_bar(10, 20).startswith("[██████████"))
+        self.assertIn("          ]", _progress_bar(10, 20))
+
+    def test_partial_block(self) -> None:
+        """Bar shows a partial unicode block for non-integer progress."""
+        bar = _progress_bar(7, 16, width=8)
+        self.assertTrue(bar.startswith("[███"))
+        self.assertRegex(bar, r"[▏▎▍▌▋▊▉]")  # Should have a partial block
+
+    def test_width_one(self) -> None:
+        """Bar works with width=1."""
+        self.assertIn("[", _progress_bar(1, 2, width=1))
+        self.assertIn("]", _progress_bar(1, 2, width=1))
+
+    def test_overflow(self) -> None:
+        """Bar is full if completed > total (overflow)."""
+        self.assertEqual(_progress_bar(15, 10), "[████████████████████]")
+
+
+class TestStatusMDRelativePaths(unittest.TestCase):
+    """Test that the Markdown status file contains only relative file paths."""
+
+    def test_status_md_relative_paths(self) -> None:
+        """REQ-OUTPUT-2: The generated Markdown status file contains relative file paths."""
+        reqsnake_py = str(Path(__file__).parent / "reqsnake.py")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_dir_path = Path(tmpdir)
+            md1 = test_dir_path / "foo.md"
+            md2 = test_dir_path / "bar/baz.md"
+            md2.parent.mkdir(parents=True, exist_ok=True)
+            md1.write_text("> REQ-1\n> Foo.\n")
+            md2.write_text("> REQ-2\n> Bar.\n")
+            # Run init
+            subprocess.run(
+                [sys.executable, reqsnake_py, "init"],
+                cwd=tmpdir,
+                check=True,
+                capture_output=True,
+            )
+            # Run status-md
+            output_file = test_dir_path / "requirements-status.md"
+            subprocess.run(
+                [sys.executable, reqsnake_py, "status-md", "-o", str(output_file)],
+                cwd=tmpdir,
+                check=True,
+                capture_output=True,
+            )
+            md = output_file.read_text(encoding="utf-8")
+            # Should contain relative paths, not absolute
+            self.assertIn("### foo.md", md)
+            self.assertIn("### bar/baz.md", md)
+            self.assertNotIn(str(md1.resolve()), md)
+            self.assertNotIn(str(md2.resolve()), md)
 
 
 if __name__ == "__main__":
