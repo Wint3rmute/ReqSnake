@@ -16,6 +16,8 @@ from reqsnake import (
 from pathlib import Path
 import subprocess
 import sys
+import reqsnake
+from typing import Any
 
 
 class TestRequirementParser(unittest.TestCase):
@@ -208,13 +210,13 @@ class TestRequirePyScenarios(unittest.TestCase):
             self.assertIn(test_dir_path / "reqs.md", files)
             lockfile_path = test_dir_path / "requirements.lock"
             self.assertTrue(lockfile_path.exists())
-            lock_data = json.loads(lockfile_path.read_text())
-            self.assertEqual(len(lock_data), 2)
+            data = json.loads(lockfile_path.read_text())
+            self.assertEqual(len(data["requirements"]), 2)
             files2, reqs2 = reqsnake_init(tmpdir)
             self.assertEqual(files, files2)
             self.assertEqual(len(reqs2), 2)
-            lock_data2 = json.loads(lockfile_path.read_text())
-            self.assertEqual(lock_data, lock_data2)
+            data2 = json.loads(lockfile_path.read_text())
+            self.assertEqual(data, data2)
 
     def test_add_requirement_updates_lockfile(self) -> None:
         """Test that requirements are added to requirements.lock when Markdown files are updated."""
@@ -225,15 +227,15 @@ class TestRequirePyScenarios(unittest.TestCase):
             md_path.write_text(md_content)
             reqsnake_init(tmpdir)
             lockfile_path = test_dir_path / "requirements.lock"
-            lock_data = json.loads(lockfile_path.read_text())
-            self.assertEqual(len(lock_data), 1)
-            self.assertEqual(lock_data[0]["req_id"], "REQ-1")
+            data = json.loads(lockfile_path.read_text())
+            self.assertEqual(len(data["requirements"]), 1)
+            self.assertEqual(data["requirements"][0]["req_id"], "REQ-1")
             md_content_updated = "> REQ-1\n> The first requirement.\n> critical\n\n> REQ-2\n> The second requirement.\n"
             md_path.write_text(md_content_updated)
             reqsnake_lock(tmpdir)
-            lock_data_updated = json.loads(lockfile_path.read_text())
-            self.assertEqual(len(lock_data_updated), 2)
-            ids = {req["req_id"] for req in lock_data_updated}
+            data_updated = json.loads(lockfile_path.read_text())
+            self.assertEqual(len(data_updated["requirements"]), 2)
+            ids = {req["req_id"] for req in data_updated["requirements"]}
             self.assertIn("REQ-1", ids)
             self.assertIn("REQ-2", ids)
 
@@ -260,12 +262,12 @@ class TestRequirePyScenarios(unittest.TestCase):
             md_path.write_text(md_content)
             reqsnake_init(tmpdir)
             lockfile_path = test_dir_path / "requirements.lock"
-            lock_data_1 = lockfile_path.read_text()
+            data_1 = json.loads(lockfile_path.read_text())
             reqsnake_lock(tmpdir)
-            lock_data_2 = lockfile_path.read_text()
+            data_2 = json.loads(lockfile_path.read_text())
             self.assertEqual(
-                lock_data_1,
-                lock_data_2,
+                data_1,
+                data_2,
                 "Lockfile should not change if requirements are unchanged.",
             )
 
@@ -790,6 +792,26 @@ class TestStatusCommand(unittest.TestCase):
             self.assertIn('"REQ-1"', dot)
             self.assertIn('"REQ-2"', dot)
             self.assertIn('"REQ-1" -> "REQ-2"', dot)
+
+
+class TestLockfileVersion(unittest.TestCase):
+    """Tests for lockfile version field and format requirements in ReqSnake."""
+
+    def test_lockfile_contains_version(self) -> None:
+        """REQ-OUTPUT-3: requirements.lock contains the version of ReqSnake that generated it."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_dir_path = Path(tmpdir)
+            md_content = "> REQ-1\n> Test requirement.\n"
+            reqs_md = test_dir_path / "reqs.md"
+            reqs_md.write_text(md_content)
+            reqsnake_init(tmpdir)
+            lockfile_path = test_dir_path / "requirements.lock"
+            data = json.loads(lockfile_path.read_text())
+            self.assertIn("version", data)
+            self.assertEqual(data["version"], reqsnake.__version__)
+            self.assertIn("requirements", data)
+            self.assertEqual(len(data["requirements"]), 1)
+            self.assertEqual(data["requirements"][0]["req_id"], "REQ-1")
 
 
 if __name__ == "__main__":

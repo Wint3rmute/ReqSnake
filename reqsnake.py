@@ -13,6 +13,9 @@ import sys
 from enum import Enum, auto
 import tempfile
 
+# Add a version string at the top of the file
+__version__ = "1.0.0"
+
 
 @dataclass(frozen=True)
 class Requirement:
@@ -237,18 +240,27 @@ def _find_markdown_files(root_dir: Path) -> list[Path]:
 
 
 def _load_lockfile(lockfile_path: Path) -> list[Requirement]:
-    """Load requirements from a JSON lockfile."""
+    """Load requirements from a JSON lockfile (requires new format with version and requirements fields)."""
     with lockfile_path.open("r", encoding="utf-8") as f:
-        data: list[dict[str, Any]] = json.load(f)
-    return [Requirement.from_dict(item) for item in data]
+        data = json.load(f)
+    if not (isinstance(data, dict) and "version" in data and "requirements" in data):
+        raise ValueError(
+            "requirements.lock is missing required 'version' or 'requirements' fields. Please regenerate the lockfile with 'reqsnake.py init'."
+        )
+    reqs = data["requirements"]
+    return [Requirement.from_dict(item) for item in reqs]
 
 
 def _save_lockfile(lockfile_path: Path, requirements: list[Requirement]) -> None:
-    """Save requirements to a JSON lockfile atomically."""
+    """Save requirements to a JSON lockfile atomically, including version info."""
+    lockfile_data = {
+        "version": __version__,
+        "requirements": [asdict(req) for req in requirements],
+    }
     with tempfile.NamedTemporaryFile(
         "w", delete=False, dir=lockfile_path.parent, encoding="utf-8"
     ) as tf:
-        json.dump([asdict(req) for req in requirements], tf, indent=2)
+        json.dump(lockfile_data, tf, indent=2)
         tempname = tf.name
     Path(tempname).replace(lockfile_path)
 
