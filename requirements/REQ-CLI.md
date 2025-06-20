@@ -7,11 +7,11 @@
 > child-of: REQ-CLI-1
 
 > REQ-CLI-3
-> When the user runs `require.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "requirements.lock is already up-to-date."). Only print the "requirements.lock updated" message if the lockfile was actually changed.
+> When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "requirements.lock is already up-to-date."). Only print the "requirements.lock updated" message if the lockfile was actually changed.
 > child-of: REQ-CLI-1
 
 > REQ-CLI-4
-> When displaying changed requirements with `require.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change
+> When displaying changed requirements with `reqsnake.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change
 > child-of: REQ-CLI-1
 
 > REQ-CLI-5

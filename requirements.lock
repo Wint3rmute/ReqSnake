@@ -137,7 +137,7 @@
   },
   {
     "req_id": "REQ-CLI-3",
-    "description": "When the user runs `require.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., \"requirements.lock is already up-to-date.\"). Only print the \"requirements.lock updated\" message if the lockfile was actually changed.",
+    "description": "When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., \"requirements.lock is already up-to-date.\"). Only print the \"requirements.lock updated\" message if the lockfile was actually changed.",
     "critical": false,
     "children": [
       "REQ-CLI-1"
@@ -146,7 +146,7 @@
   },
   {
     "req_id": "REQ-CLI-4",
-    "description": "When displaying changed requirements with `require.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change",
+    "description": "When displaying changed requirements with `reqsnake.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change",
     "critical": false,
     "children": [
       "REQ-CLI-1"

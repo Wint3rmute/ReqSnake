@@ -1,25 +1,22 @@
-# Architecture
+# Architecture of ReqSnake
 
-This file defines the architecture of `require.py`.
+This file defines the architecture of `ReqSnake`.
 
-## Modularity
+## Overview
 
-It shall be possible to use the `require.py` application both interactively (via CLI) and via a Python API.
-This can be useful both for extending `require.py` and for tests.
+It shall be possible to use the `ReqSnake` application both interactively (via CLI) and via a Python API.
+This can be useful both for extending `ReqSnake` and for tests.
 
-### Testing
+## Testing
 
-Apart from unit testing, there shall also exist test scenarios which check the behaviour of the entire `require.py` when used on a specific set of Markdown files.
+Apart from unit testing, there shall also exist test scenarios which check the behaviour of the entire `ReqSnake` when used on a specific set of Markdown files.
 
-Tests shall create a test folder via `tempfile`, add the Markdown documentation and run a set of `require.py` commands (using the Python API). Then, the tests shall check if the Python API require expected outputs and if the `requirements.lock` file has been properly changed (or has not, depending on the test).
+Tests shall create a test folder via `tempfile`, add the Markdown documentation and run a set of `ReqSnake` commands (using the Python API). Then, the tests shall check if the Python API require expected outputs and if the `requirements.lock` file has been properly changed (or has not, depending on the scenario).
 
-#### Example tests
+## Example Workflow
 
-**Checking if `requirements.lock` is not created again**
-
-1. Create a new folder
-2. Create some requirements in Markdown files
-3. Run `require.py init` (via Python API)
-4. Check if `requirements.lock` has been generated
-5. Run `require.py init` again
-6. Check if an error is returned
+1. Create a test folder
+2. Add Markdown files with requirements
+3. Run `reqsnake.py init` (via Python API)
+4. Check the generated `requirements.lock`
+5. Run `reqsnake.py init` again

@@ -9,27 +9,27 @@
 
 ## Requirements by File
 
-### /home/wint3rmute/require.py/reqs.md
+### /home/wint3rmute/ReqSnake/reqs.md
 - **Completed:** 1/2 (50.0%)
 
 - ⏳ **REQ-1**: The first requirement.
 - ✅ ⚠️ **REQ-1**: The system shall support user authentication. _(children: REQ-0)_
 
-### /home/wint3rmute/require.py/requirements/REQ-CLI.md
+### /home/wint3rmute/ReqSnake/requirements/REQ-CLI.md
 - **Completed:** 2/10 (20.0%)
 
 - ✅ ⚠️ **REQ-CLI-1**: The tool shall provide a command-line interface (CLI) for managing requirements.
 - ✅ **REQ-CLI-2**: The CLI shall support the commands: init, check, lock, and status.
 - ⏳ **REQ-CLI-3**: The CLI shall print the Markdown files being scanned during operations.
-- ⏳ **REQ-CLI-4**: When the user runs `require.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "requirements.lock is already up-to-date."). Only print the "requirements.lock updated" message if the lockfile was actually changed.
-- ⏳ **REQ-CLI-5**: When displaying changed requirements with `require.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change
+- ⏳ **REQ-CLI-4**: When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "requirements.lock is already up-to-date."). Only print the "requirements.lock updated" message if the lockfile was actually changed.
+- ⏳ **REQ-CLI-5**: When displaying changed requirements with `reqsnake.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change
 - ⏳ **REQ-CLI-6**: The CLI shall provide a `status` command that displays completion status of requirements.
 - ⏳ **REQ-CLI-7**: The `status` command shall display total requirements count, completed requirements count and percentage, and critical requirements status.
 - ⏳ **REQ-CLI-8**: The `status` command shall group requirements by source file and show completion status for each file.
 - ⏳ **REQ-CLI-9**: The `status` command shall display hierarchical completion status showing parent-child relationships with visual indicators.
 - ⏳ **REQ-CLI-10**: The CLI shall provide a command to generate a Markdown file containing the status of all currently defined requirements, relying solely on the requirements.lock file. The output shall be suitable for inclusion in documentation or reports.
 
-### /home/wint3rmute/require.py/requirements/REQ-CORE.md
+### /home/wint3rmute/ReqSnake/requirements/REQ-CORE.md
 - **Completed:** 0/6 (0.0%)
 
 - ⏳ ⚠️ **REQ-CORE-1**: The tool shall parse requirements from Markdown files using blockquote syntax.
@@ -39,7 +39,7 @@
 - ⏳ **REQ-CORE-5**: Child relationships shall be described with a "child-of" key. Example: "child-of REQ-123"
 - ⏳ **REQ-CORE-6**: Each requirement shall be in a form of "<STRING>-<NUMBER>". Where NUMBER is an integer.
 
-### /home/wint3rmute/require.py/requirements/REQ-PARSER.md
+### /home/wint3rmute/ReqSnake/requirements/REQ-PARSER.md
 - **Completed:** 0/19 (0.0%)
 
 - ⏳ **REQ-PARSER-1**: The parser shall extract requirements from Markdown blockquotes with high accuracy.
@@ -62,7 +62,7 @@
 - ⏳ **REQ-PARSER-17**: The parser shall ignore blockquotes that are commented out in Markdown (e.g., inside ).
 - ⏳ **REQ-PARSER-18**: The parser shall handle files with mixed line endings and leading/trailing whitespace.
 
-### /home/wint3rmute/require.py/requirements/REQ-TEST.md
+### /home/wint3rmute/ReqSnake/requirements/REQ-TEST.md
 - **Completed:** 0/4 (0.0%)
 
 - ⏳ ⚠️ **REQ-TEST-1**: The tool shall provide unit tests for the Markdown parser.
@@ -85,8 +85,8 @@
 - ⏳ **REQ-CLI-10**: The CLI shall provide a command to generate a Markdown file containing the status of all currently defined requirements, relying solely on the requirements.lock file. The output shall be suitable for inclusion in documentation or reports.
 - ✅ **REQ-CLI-2**: The CLI shall support the commands: init, check, lock, and status.
 - ⏳ **REQ-CLI-3**: The CLI shall print the Markdown files being scanned during operations.
-- ⏳ **REQ-CLI-4**: When the user runs `require.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "requirements.lock is already up-to-date."). Only print the "requirements.lock updated" message if the lockfile was actually changed.
-- ⏳ **REQ-CLI-5**: When displaying changed requirements with `require.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change
+- ⏳ **REQ-CLI-4**: When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "requirements.lock is already up-to-date."). Only print the "requirements.lock updated" message if the lockfile was actually changed.
+- ⏳ **REQ-CLI-5**: When displaying changed requirements with `reqsnake.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change
 - ⏳ **REQ-CLI-6**: The CLI shall provide a `status` command that displays completion status of requirements.
 - ⏳ **REQ-CLI-7**: The `status` command shall display total requirements count, completed requirements count and percentage, and critical requirements status.
 - ⏳ **REQ-CLI-8**: The `status` command shall group requirements by source file and show completion status for each file.

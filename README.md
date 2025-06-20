@@ -1,6 +1,6 @@
-# Require.py
+# ReqSnake
 
-Require.py is a dead-simple Python script for tracking requirements defined in a set of Markdown documents.
+ReqSnake is a dead-simple Python script for tracking requirements defined in a set of Markdown documents.
 
 ## But what is a requirement?
 
@@ -33,7 +33,7 @@ Huge, proprietary programs like:
 - IBM DOORS 
 - Enterprise architect
 
-### How is `require.py` better?
+### How is `ReqSnake` better?
 
 - It is a simple Python script
     - No dependencies
@@ -73,19 +73,19 @@ Example:
 - **Requirements hierarchy:** Use `child-of` to define relationships.
 - **Change tracking:** Uses a `requirements.lock` file for precise diffing.
 - **CLI commands:**
-    - `require.py init` — scan Markdown files and generate `requirements.lock`.
-    - `require.py check` — compare the lockfile to Markdown requirements. Shows which file each changed requirement comes from.
-    - `require.py lock` — update the lockfile. Idempotent: only updates if needed.
+    - `reqsnake.py init` — scan Markdown files and generate `requirements.lock`.
+    - `reqsnake.py check` — compare the lockfile to Markdown requirements. Shows which file each changed requirement comes from.
+    - `reqsnake.py lock` — update the lockfile. Idempotent: only updates if needed.
 - **Validation workflow:** All changes are validated with `./check.sh` (runs tests, type checks, and linter).
 - **Google-style docstrings and modern Python:** All code is documented and type-annotated.
 
 ## Quick Start example
 
-- `require.py init` — initialize `require.py` in the current working directory
+- `reqsnake.py init` — initialize ReqSnake in the current working directory
     - This will scan the existing directory for Markdown files and generate a `requirements.lock`
-- `require.py check` — will read the current `requirements.lock` file and check if it is up-to-date with the requirements defined in the Markdown documentation in your working directory.
+- `reqsnake.py check` — will read the current `requirements.lock` file and check if it is up-to-date with the requirements defined in the Markdown documentation in your working directory.
     - If there are changes, the difference between `requirements.lock` file and the currently defined requirements will be displayed, including the file path for each changed requirement.
-- `require.py lock` — will update the `requirements.lock` file to reflect the currently defined requirements in your Markdown files. If nothing has changed, the lockfile is left untouched.
+- `reqsnake.py lock` — will update the `requirements.lock` file to reflect the currently defined requirements in your Markdown files. If nothing has changed, the lockfile is left untouched.
 
 ## Questions to be asked
 
@@ -96,8 +96,8 @@ Example:
         - `AVIO-15` would be something for avionics
         - `SW-33` would be on-board software for the plane
 - How to generate a lockfile with all defined requirements at a given point in time?
-    - This is done with `require.py init` and produces a JSON file
-- How to mark some requirements as `critical`, so that `require.py` throws an error if they are ever removed?
+    - This is done with `reqsnake.py init` and produces a JSON file
+- How to mark some requirements as `critical`, so that `reqsnake.py` throws an error if they are ever removed?
     - Add `critical` as an attribute in the blockquote
 - How to mark some requirements as children of other requirements?
     - Use `child-of` attributes (no cycles allowed)

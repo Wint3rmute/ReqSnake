@@ -1,7 +1,5 @@
 #!/bin/sh
 
-git add -A && git commit -m "AI is running checks"
-
 set -e
 
 # Format code
@@ -12,7 +10,7 @@ black .
 mypy .
 
 # Run unit and integration tests
-python test_require.py
+python test_reqsnake.py
 
 # Run ruff linter
 ruff check .

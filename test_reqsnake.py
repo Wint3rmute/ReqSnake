@@ -1,11 +1,11 @@
-"""test_require.py - Unit and integration tests for require.py requirements management tool."""
+"""Unit and integration tests for ReqSnake requirements management tool."""
 
 import unittest
 import tempfile
 import os
 import shutil
 import json
-from require import (
+from reqsnake import (
     Requirement,
     parse_requirements_from_markdown,
     api_init,
@@ -187,7 +187,7 @@ Some text.
 
 
 class TestRequirePyScenarios(unittest.TestCase):
-    """Integration tests for require.py scenarios as described in ARCHITECTURE.md."""
+    """Integration tests for ReqSnake scenarios as described in ARCHITECTURE.md."""
 
     def test_init_and_reinit(self) -> None:
         """Test init and re-init scenarios for requirements management."""
@@ -271,14 +271,14 @@ class TestRequirePyScenarios(unittest.TestCase):
 
     def test_cli_check_outputs_file_path(self) -> None:
         """Test that the CLI check output includes the file path for changed requirements."""
-        require_py = str(Path(__file__).parent / "require.py")
+        reqsnake_py = str(Path(__file__).parent / "reqsnake.py")
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
             md_path = test_dir_path / "reqs.md"
             md_path.write_text("> REQ-1\n> The first requirement.\n")
             # Run init
             subprocess.run(
-                [sys.executable, require_py, "init"],
+                [sys.executable, reqsnake_py, "init"],
                 cwd=tmpdir,
                 check=True,
                 capture_output=True,
@@ -287,7 +287,7 @@ class TestRequirePyScenarios(unittest.TestCase):
             md_path.write_text("> REQ-1\n> The changed requirement.\n")
             # Run check and capture output
             result = subprocess.run(
-                [sys.executable, require_py, "check"],
+                [sys.executable, reqsnake_py, "check"],
                 cwd=tmpdir,
                 capture_output=True,
                 text=True,
@@ -612,7 +612,7 @@ class TestStatusCommand(unittest.TestCase):
 
     def test_cli_status_output(self) -> None:
         """Test that the CLI status command produces expected output."""
-        require_py = str(Path(__file__).parent / "require.py")
+        reqsnake_py = str(Path(__file__).parent / "reqsnake.py")
 
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
@@ -630,7 +630,7 @@ class TestStatusCommand(unittest.TestCase):
 
             # Run init
             subprocess.run(
-                [sys.executable, require_py, "init"],
+                [sys.executable, reqsnake_py, "init"],
                 cwd=tmpdir,
                 check=True,
                 capture_output=True,
@@ -638,7 +638,7 @@ class TestStatusCommand(unittest.TestCase):
 
             # Run status and capture output
             result = subprocess.run(
-                [sys.executable, require_py, "status"],
+                [sys.executable, reqsnake_py, "status"],
                 cwd=tmpdir,
                 capture_output=True,
                 text=True,
@@ -659,12 +659,12 @@ class TestStatusCommand(unittest.TestCase):
 
     def test_cli_status_no_lockfile(self) -> None:
         """Test that CLI status command handles missing lockfile gracefully."""
-        require_py = str(Path(__file__).parent / "require.py")
+        reqsnake_py = str(Path(__file__).parent / "reqsnake.py")
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Run status without init
             result = subprocess.run(
-                [sys.executable, require_py, "status"],
+                [sys.executable, reqsnake_py, "status"],
                 cwd=tmpdir,
                 capture_output=True,
                 text=True,
@@ -695,7 +695,7 @@ class TestStatusCommand(unittest.TestCase):
 
     def test_cli_status_md_output(self) -> None:
         """Test that the CLI status-md command produces a Markdown file with correct content."""
-        require_py = str(Path(__file__).parent / "require.py")
+        reqsnake_py = str(Path(__file__).parent / "reqsnake.py")
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
             md_content = """
@@ -712,7 +712,7 @@ class TestStatusCommand(unittest.TestCase):
 
             # Run init to create requirements.lock
             subprocess.run(
-                [sys.executable, require_py, "init"],
+                [sys.executable, reqsnake_py, "init"],
                 cwd=tmpdir,
                 check=True,
                 capture_output=True,
@@ -721,7 +721,7 @@ class TestStatusCommand(unittest.TestCase):
             # Run status-md to generate Markdown status file
             output_file = test_dir_path / "requirements-status.md"
             result = subprocess.run(
-                [sys.executable, require_py, "status-md", "-o", str(output_file)],
+                [sys.executable, reqsnake_py, "status-md", "-o", str(output_file)],
                 cwd=tmpdir,
                 capture_output=True,
                 text=True,
@@ -768,7 +768,7 @@ class TestStatusCommand(unittest.TestCase):
             reqs_md.write_text(md_content)
             # Generate lockfile
             subprocess.run(
-                [sys.executable, str(Path(__file__).parent / "require.py"), "init"],
+                [sys.executable, str(Path(__file__).parent / "reqsnake.py"), "init"],
                 cwd=tmpdir,
                 check=True,
             )
@@ -777,7 +777,7 @@ class TestStatusCommand(unittest.TestCase):
             subprocess.run(
                 [
                     sys.executable,
-                    str(Path(__file__).parent / "require.py"),
+                    str(Path(__file__).parent / "reqsnake.py"),
                     "visual-dot",
                     "-o",
                     str(dot_file),

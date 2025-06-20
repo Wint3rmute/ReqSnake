@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-"""require.py - Dead-simple Python script for tracking requirements in Markdown documents.
+"""reqsnake.py - Dead-simple Python script for tracking requirements in Markdown documents.
 
 This module provides both a CLI and a Python API for managing requirements defined in Markdown files.
 """
@@ -703,7 +703,7 @@ def cli_check(args: argparse.Namespace) -> None:
     try:
         check_result, req_id_to_file = api_check()
     except FileNotFoundError:
-        print("❌ requirements.lock not found. Run 'require.py init' first.")
+        print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
     print_scanned_files(check_result.scanned_files)
     diff = check_result.diff
@@ -769,7 +769,7 @@ def cli_status(args: argparse.Namespace) -> None:
     try:
         status_result = api_status()
     except FileNotFoundError:
-        print("❌ requirements.lock not found. Run 'require.py init' first.")
+        print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
 
     print_status_summary(status_result)
@@ -782,7 +782,7 @@ def cli_status_md(args: argparse.Namespace) -> None:
     try:
         status_result = api_status()
     except FileNotFoundError:
-        print("❌ requirements.lock not found. Run 'require.py init' first.")
+        print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
     output_path = (
         Path(args.output)
@@ -799,7 +799,7 @@ def cli_visual_dot(args: argparse.Namespace) -> None:
     dir_path = Path.cwd()
     lockfile_path = dir_path / "requirements.lock"
     if not lockfile_path.is_file():
-        print("❌ requirements.lock not found. Run 'require.py init' first.")
+        print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
     output_path = (
         Path(args.output)
@@ -811,16 +811,16 @@ def cli_visual_dot(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    """Parse arguments and run the appropriate CLI command for require.py."""
+    """Parse arguments and run the appropriate CLI command for reqsnake.py."""
     parser = argparse.ArgumentParser(
-        description="require.py - Markdown requirements tracker"
+        description="reqsnake.py - Markdown requirements tracker"
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # 'init' command
     p_init = subparsers.add_parser(
         "init",
-        help="Initialize require.py in the current directory and generate requirements.lock.",
+        help="Initialize reqsnake.py in the current directory and generate requirements.lock.",
     )
     p_init.set_defaults(func=cli_init)
 
