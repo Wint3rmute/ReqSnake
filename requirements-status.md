@@ -14,7 +14,7 @@
 
 - ⏳ **REQ-CLI-1**: The CLI shall support the commands: init, check, lock, and status. _(children: REQ-CORE-4)_
 - ⏳ **REQ-CLI-2**: The CLI shall print the Markdown files being scanned during operations. _(children: REQ-CLI-1)_
-- ⏳ **REQ-CLI-3**: When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "requirements.lock is already up-to-date."). Only print the "requirements.lock updated" message if the lockfile was actually changed. _(children: REQ-CLI-1)_
+- ⏳ **REQ-CLI-3**: When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "reqsnake.lock is already up-to-date."). Only print the "reqsnake.lock updated" message if the lockfile was actually changed. _(children: REQ-CLI-1)_
 - ⏳ **REQ-CLI-4**: When displaying changed requirements with `reqsnake.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change _(children: REQ-CLI-1)_
 - ⏳ **REQ-CLI-5**: The application shall allow for specification of filesystem paths to be ignored during requirements scanning. A file `.requirementsignore` shall be used to specify the list of filesystem paths to ignore, similar to how .gitignore works
 - ⏳ **REQ-CLI-6**: The CLI shall provide a `status` command that displays completion status of requirements. _(children: REQ-CLI-2, REQ-CORE-9)_
@@ -27,7 +27,7 @@
 
 - ⏳ ⚠️ **REQ-CORE-1**: The tool shall parse requirements from Markdown files using blockquote syntax.
 - ⏳ ⚠️ **REQ-CORE-2**: Each requirement shall have a unique ID, description, and may have critical, child, and completed attributes.
-- ⏳ ⚠️ **REQ-CORE-3**: The tool shall store requirements in a requirements.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.
+- ⏳ ⚠️ **REQ-CORE-3**: The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.
 - ⏳ ⚠️ **REQ-CORE-4**: The tool shall provide a command-line interface (CLI) for managing requirements.
 - ⏳ ⚠️ **REQ-CORE-5**: Child relationships shall be described with a "child-of" key. Example: "child-of REQ-123"
 - ⏳ ⚠️ **REQ-CORE-6**: Each requirement shall be in a form of "<STRING>-<NUMBER>". Where NUMBER is an integer.
@@ -38,9 +38,9 @@
 ### /home/wint3rmute/require.py/requirements/REQ-OUTPUT.md
 - **Completed:** 0/3 (0.0%)
 
-- ⏳ **REQ-OUTPUT-1**: The CLI shall provide a command to generate a Markdown file containing the status of all currently defined requirements, relying solely on the requirements.lock file. The output shall be suitable for inclusion in documentation or reports. _(children: REQ-CORE-9)_
-- ⏳ **REQ-OUTPUT-2**: The tool shall provide a command to generate a Graphviz diagram (in dot format) representing the requirements hierarchy, using the requirements.lock file as input. The output shall be suitable for visualization tools and similar in spirit to the status-md command. _(children: REQ-CORE-9)_
-- ⏳ **REQ-OUTPUT-3**: The requirements.lock file shall contain the version of application which generated it. _(children: REQ-CORE-3)_
+- ⏳ **REQ-OUTPUT-1**: The CLI shall provide a command to generate a Markdown file containing the status of all currently defined requirements, relying solely on the reqsnake.lock file. The output shall be suitable for inclusion in documentation or reports. _(children: REQ-CORE-9)_
+- ⏳ **REQ-OUTPUT-2**: The tool shall provide a command to generate a Graphviz diagram (in dot format) representing the requirements hierarchy, using the reqsnake.lock file as input. The output shall be suitable for visualization tools and similar in spirit to the status-md command. _(children: REQ-CORE-9)_
+- ⏳ **REQ-OUTPUT-3**: The reqsnake.lock file shall contain the version of application which generated it. _(children: REQ-CORE-3)_
 
 ### /home/wint3rmute/require.py/requirements/REQ-PARSER.md
 - **Completed:** 0/19 (0.0%)
@@ -70,12 +70,12 @@
 
 - ⏳ ⚠️ **REQ-TEST-1**: The parser shall provide unit tests for the Markdown parser. _(children: REQ-CORE-1, REQ-PARSER-1)_
 - ⏳ **REQ-TEST-2**: The application code provide integration tests that use the Python API to simulate CLI operations in temporary directories. _(children: REQ-CORE-1)_
-- ⏳ **REQ-TEST-3**: Integration tests shall verify that requirements.lock is updated when Markdown files are changed. _(children: REQ-CORE-1)_
+- ⏳ **REQ-TEST-3**: Integration tests shall verify that reqsnake.lock is updated when Markdown files are changed. _(children: REQ-CORE-1)_
 - ⏳ **REQ-TEST-4**: Integration tests shall verify that duplicate requirement IDs raise an error. _(children: REQ-CORE-1)_
 
 ## Hierarchical Status
 
-- ⏳ **REQ-CLI-3**: When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "requirements.lock is already up-to-date."). Only print the "requirements.lock updated" message if the lockfile was actually changed. _(children: REQ-CLI-1)_
+- ⏳ **REQ-CLI-3**: When the user runs `reqsnake.py lock` and the requirements have not changed since the last lock, the CLI shall print a message indicating that the lockfile is already up-to-date (e.g., "reqsnake.lock is already up-to-date."). Only print the "reqsnake.lock updated" message if the lockfile was actually changed. _(children: REQ-CLI-1)_
   - ⏳ **REQ-CLI-1**: The CLI shall support the commands: init, check, lock, and status. _(children: REQ-CORE-4)_
     - ⏳ ⚠️ **REQ-CORE-4**: The tool shall provide a command-line interface (CLI) for managing requirements.
 - ⏳ **REQ-CLI-4**: When displaying changed requirements with `reqsnake.py check`, the application shall display the path to the file containing each requiremement which has undergone any kind of change _(children: REQ-CLI-1)_
@@ -103,12 +103,12 @@
 - ⏳ ⚠️ **REQ-CORE-5**: Child relationships shall be described with a "child-of" key. Example: "child-of REQ-123"
 - ⏳ ⚠️ **REQ-CORE-7**: A requirement can only be marked as completed once all of its child requirements have been marked as completed
 - ⏳ ⚠️ **REQ-CORE-8**: The tool shall provide a CLI Python API for core operations.
-- ⏳ **REQ-OUTPUT-1**: The CLI shall provide a command to generate a Markdown file containing the status of all currently defined requirements, relying solely on the requirements.lock file. The output shall be suitable for inclusion in documentation or reports. _(children: REQ-CORE-9)_
+- ⏳ **REQ-OUTPUT-1**: The CLI shall provide a command to generate a Markdown file containing the status of all currently defined requirements, relying solely on the reqsnake.lock file. The output shall be suitable for inclusion in documentation or reports. _(children: REQ-CORE-9)_
   - ⏳ ⚠️ **REQ-CORE-9**: The tool shall provide tools for visualisation of the current state of requirements.
-- ⏳ **REQ-OUTPUT-2**: The tool shall provide a command to generate a Graphviz diagram (in dot format) representing the requirements hierarchy, using the requirements.lock file as input. The output shall be suitable for visualization tools and similar in spirit to the status-md command. _(children: REQ-CORE-9)_
+- ⏳ **REQ-OUTPUT-2**: The tool shall provide a command to generate a Graphviz diagram (in dot format) representing the requirements hierarchy, using the reqsnake.lock file as input. The output shall be suitable for visualization tools and similar in spirit to the status-md command. _(children: REQ-CORE-9)_
   - ⏳ ⚠️ **REQ-CORE-9**: The tool shall provide tools for visualisation of the current state of requirements.
-- ⏳ **REQ-OUTPUT-3**: The requirements.lock file shall contain the version of application which generated it. _(children: REQ-CORE-3)_
-  - ⏳ ⚠️ **REQ-CORE-3**: The tool shall store requirements in a requirements.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.
+- ⏳ **REQ-OUTPUT-3**: The reqsnake.lock file shall contain the version of application which generated it. _(children: REQ-CORE-3)_
+  - ⏳ ⚠️ **REQ-CORE-3**: The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.
 - ⏳ **REQ-PARSER-10**: The parser shall raise errors on unknown attributes in requirement definitions. _(children: REQ-CORE-2)_
   - ⏳ ⚠️ **REQ-CORE-2**: Each requirement shall have a unique ID, description, and may have critical, child, and completed attributes.
 - ⏳ **REQ-PARSER-11**: The parser shall treat requirement IDs as case-sensitive and not allow IDs with only case differences. _(children: REQ-CORE-2)_
@@ -152,7 +152,7 @@
     - ⏳ ⚠️ **REQ-CORE-6**: Each requirement shall be in a form of "<STRING>-<NUMBER>". Where NUMBER is an integer.
 - ⏳ **REQ-TEST-2**: The application code provide integration tests that use the Python API to simulate CLI operations in temporary directories. _(children: REQ-CORE-1)_
   - ⏳ ⚠️ **REQ-CORE-1**: The tool shall parse requirements from Markdown files using blockquote syntax.
-- ⏳ **REQ-TEST-3**: Integration tests shall verify that requirements.lock is updated when Markdown files are changed. _(children: REQ-CORE-1)_
+- ⏳ **REQ-TEST-3**: Integration tests shall verify that reqsnake.lock is updated when Markdown files are changed. _(children: REQ-CORE-1)_
   - ⏳ ⚠️ **REQ-CORE-1**: The tool shall parse requirements from Markdown files using blockquote syntax.
 - ⏳ **REQ-TEST-4**: Integration tests shall verify that duplicate requirement IDs raise an error. _(children: REQ-CORE-1)_
   - ⏳ ⚠️ **REQ-CORE-1**: The tool shall parse requirements from Markdown files using blockquote syntax.
