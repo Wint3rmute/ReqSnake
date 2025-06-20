@@ -815,7 +815,7 @@ def cli_visual_dot(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    """Parse arguments and run the appropriate CLI command for reqsnake.py."""
+    """Parse arguments and run the appropriate CLI command for reqsnake.py. Supports shorthands for commands."""
     parser = argparse.ArgumentParser(
         description="reqsnake.py - Markdown requirements tracker"
     )
@@ -825,6 +825,7 @@ def main() -> None:
     p_init = subparsers.add_parser(
         "init",
         help="Initialize reqsnake.py in the current directory and generate requirements.lock.",
+        aliases=["i"],
     )
     p_init.set_defaults(func=cli_init)
 
@@ -832,12 +833,15 @@ def main() -> None:
     p_check = subparsers.add_parser(
         "check",
         help="Check if requirements.lock is up-to-date with Markdown requirements.",
+        aliases=["c"],
     )
     p_check.set_defaults(func=cli_check)
 
     # 'lock' command
     p_lock = subparsers.add_parser(
-        "lock", help="Update requirements.lock to match current Markdown requirements."
+        "lock",
+        help="Update requirements.lock to match current Markdown requirements.",
+        aliases=["l"],
     )
     p_lock.set_defaults(func=cli_lock)
 
@@ -845,6 +849,7 @@ def main() -> None:
     p_status = subparsers.add_parser(
         "status",
         help="Get status information about requirements.",
+        aliases=["s"],
     )
     p_status.set_defaults(func=cli_status)
 
@@ -852,6 +857,7 @@ def main() -> None:
     p_status_md = subparsers.add_parser(
         "status-md",
         help="Generate a Markdown file with the status of all requirements (from requirements.lock).",
+        aliases=["sm"],
     )
     p_status_md.add_argument(
         "-o",
@@ -865,6 +871,7 @@ def main() -> None:
     p_visual_dot = subparsers.add_parser(
         "visual-dot",
         help="Generate a Graphviz dot file representing the requirements hierarchy (from requirements.lock).",
+        aliases=["v"],
     )
     p_visual_dot.add_argument(
         "-o",
