@@ -8,9 +8,9 @@ import json
 from reqsnake import (
     Requirement,
     parse_requirements_from_markdown,
-    api_init,
-    api_lock,
-    api_status,
+    reqsnake_init,
+    reqsnake_lock,
+    reqsnake_status,
     StatusResult,
 )
 from pathlib import Path
@@ -204,13 +204,13 @@ class TestRequirePyScenarios(unittest.TestCase):
 """
             reqs_md = test_dir_path / "reqs.md"
             reqs_md.write_text(md_content)
-            files, reqs = api_init(tmpdir)
+            files, reqs = reqsnake_init(tmpdir)
             self.assertIn(test_dir_path / "reqs.md", files)
             lockfile_path = test_dir_path / "requirements.lock"
             self.assertTrue(lockfile_path.exists())
             lock_data = json.loads(lockfile_path.read_text())
             self.assertEqual(len(lock_data), 2)
-            files2, reqs2 = api_init(tmpdir)
+            files2, reqs2 = reqsnake_init(tmpdir)
             self.assertEqual(files, files2)
             self.assertEqual(len(reqs2), 2)
             lock_data2 = json.loads(lockfile_path.read_text())
@@ -223,14 +223,14 @@ class TestRequirePyScenarios(unittest.TestCase):
             md_content = "> REQ-1\n> The first requirement.\n> critical\n"
             md_path = test_dir_path / "reqs.md"
             md_path.write_text(md_content)
-            api_init(tmpdir)
+            reqsnake_init(tmpdir)
             lockfile_path = test_dir_path / "requirements.lock"
             lock_data = json.loads(lockfile_path.read_text())
             self.assertEqual(len(lock_data), 1)
             self.assertEqual(lock_data[0]["req_id"], "REQ-1")
             md_content_updated = "> REQ-1\n> The first requirement.\n> critical\n\n> REQ-2\n> The second requirement.\n"
             md_path.write_text(md_content_updated)
-            api_lock(tmpdir)
+            reqsnake_lock(tmpdir)
             lock_data_updated = json.loads(lockfile_path.read_text())
             self.assertEqual(len(lock_data_updated), 2)
             ids = {req["req_id"] for req in lock_data_updated}
@@ -246,22 +246,22 @@ class TestRequirePyScenarios(unittest.TestCase):
             )
             reqs_md = test_dir_path / "reqs.md"
             reqs_md.write_text(md_content)
-            files, reqs = api_init(tmpdir)
+            files, reqs = reqsnake_init(tmpdir)
             self.assertEqual(len(reqs), 1)
             req = reqs[0]
             self.assertIn("REQ-DOES-NOT-EXIST", req.children)
 
     def test_lock_idempotency(self) -> None:
-        """Test that running api_lock twice without changes does not alter the lockfile (idempotency)."""
+        """Test that running reqsnake_lock twice without changes does not alter the lockfile (idempotency)."""
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
             md_content = "> REQ-1\n> The first requirement.\n> critical\n"
             md_path = test_dir_path / "reqs.md"
             md_path.write_text(md_content)
-            api_init(tmpdir)
+            reqsnake_init(tmpdir)
             lockfile_path = test_dir_path / "requirements.lock"
             lock_data_1 = lockfile_path.read_text()
-            api_lock(tmpdir)
+            reqsnake_lock(tmpdir)
             lock_data_2 = lockfile_path.read_text()
             self.assertEqual(
                 lock_data_1,
@@ -306,7 +306,7 @@ class TestRequirePyScenarios(unittest.TestCase):
             file2.write_text("> REQ-2\n> Requirement 2.\n")
             # Test literal ignore
             (test_dir_path / ".requirementsignore").write_text("ignoreme.md\n")
-            files, reqs = api_init(tmpdir)
+            files, reqs = reqsnake_init(tmpdir)
             scanned = {f.name for f in files}
             self.assertIn("reqs1.md", scanned)
             self.assertNotIn("ignoreme.md", scanned)
@@ -314,7 +314,7 @@ class TestRequirePyScenarios(unittest.TestCase):
             self.assertEqual(reqs[0].req_id, "REQ-1")
             # Test glob ignore
             (test_dir_path / ".requirementsignore").write_text("*ignore*.md\n")
-            files, reqs = api_init(tmpdir)
+            files, reqs = reqsnake_init(tmpdir)
             scanned = {f.name for f in files}
             self.assertIn("reqs1.md", scanned)
             self.assertNotIn("ignoreme.md", scanned)
@@ -322,7 +322,7 @@ class TestRequirePyScenarios(unittest.TestCase):
             self.assertEqual(reqs[0].req_id, "REQ-1")
             # Test negation (!)
             (test_dir_path / ".requirementsignore").write_text("*.md\n!reqs1.md\n")
-            files, reqs = api_init(tmpdir)
+            files, reqs = reqsnake_init(tmpdir)
             scanned = {f.name for f in files}
             self.assertIn("reqs1.md", scanned)
             self.assertNotIn("ignoreme.md", scanned)
@@ -330,7 +330,7 @@ class TestRequirePyScenarios(unittest.TestCase):
             self.assertEqual(reqs[0].req_id, "REQ-1")
             # Now remove .requirementsignore and both should be scanned
             (test_dir_path / ".requirementsignore").unlink()
-            files, reqs = api_init(tmpdir)
+            files, reqs = reqsnake_init(tmpdir)
             scanned = {f.name for f in files}
             self.assertIn("reqs1.md", scanned)
             self.assertIn("ignoreme.md", scanned)
@@ -457,7 +457,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
             reqs_md = Path(tmpdir) / "reqs.md"
             reqs_md.write_text(md)
             with self.assertRaises(ValueError) as ctx:
-                api_init(tmpdir)
+                reqsnake_init(tmpdir)
             self.assertIn("Circular dependency detected", str(ctx.exception))
 
     def test_unicode_support(self) -> None:
@@ -492,8 +492,8 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
 class TestStatusCommand(unittest.TestCase):
     """Unit and integration tests for the status command functionality."""
 
-    def test_api_status_basic_functionality(self) -> None:
-        """Test basic api_status functionality with simple requirements."""
+    def test_reqsnake_status_basic_functionality(self) -> None:
+        """Test basic reqsnake_status functionality with simple requirements."""
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
             md_content = """
@@ -514,10 +514,10 @@ class TestStatusCommand(unittest.TestCase):
             reqs_md.write_text(md_content)
 
             # Initialize first
-            api_init(tmpdir)
+            reqsnake_init(tmpdir)
 
             # Test status
-            status_result = api_status(tmpdir)
+            status_result = reqsnake_status(tmpdir)
 
             self.assertIsInstance(status_result, StatusResult)
             self.assertEqual(status_result.total_count, 3)
@@ -526,15 +526,15 @@ class TestStatusCommand(unittest.TestCase):
             self.assertEqual(status_result.critical_completed_count, 1)
             self.assertEqual(len(status_result.requirements), 3)
 
-    def test_api_status_no_lockfile(self) -> None:
-        """Test that api_status raises FileNotFoundError when lockfile doesn't exist."""
+    def test_reqsnake_status_no_lockfile(self) -> None:
+        """Test that reqsnake_status raises FileNotFoundError when lockfile doesn't exist."""
         with tempfile.TemporaryDirectory() as tmpdir:
             with self.assertRaises(FileNotFoundError) as context:
-                api_status(tmpdir)
+                reqsnake_status(tmpdir)
             self.assertIn("requirements.lock not found", str(context.exception))
 
-    def test_api_status_with_hierarchical_requirements(self) -> None:
-        """Test api_status with parent-child relationships using valid ASCII IDs."""
+    def test_reqsnake_status_with_hierarchical_requirements(self) -> None:
+        """Test reqsnake_status with parent-child relationships using valid ASCII IDs."""
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
             md_content = """
@@ -555,10 +555,10 @@ class TestStatusCommand(unittest.TestCase):
             reqs_md.write_text(md_content)
 
             # Initialize first
-            api_init(tmpdir)
+            reqsnake_init(tmpdir)
 
             # Test status
-            status_result = api_status(tmpdir)
+            status_result = reqsnake_status(tmpdir)
 
             self.assertEqual(status_result.total_count, 3)
             self.assertEqual(status_result.completed_count, 1)
@@ -573,8 +573,8 @@ class TestStatusCommand(unittest.TestCase):
             for pr in status_result.requirements:
                 self.assertEqual(pr.source_file, reqs_md)
 
-    def test_api_status_multiple_files(self) -> None:
-        """Test api_status with requirements spread across multiple files."""
+    def test_reqsnake_status_multiple_files(self) -> None:
+        """Test reqsnake_status with requirements spread across multiple files."""
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
 
@@ -588,10 +588,10 @@ class TestStatusCommand(unittest.TestCase):
             file2.write_text(file2_content)
 
             # Initialize first
-            api_init(tmpdir)
+            reqsnake_init(tmpdir)
 
             # Test status
-            status_result = api_status(tmpdir)
+            status_result = reqsnake_status(tmpdir)
 
             self.assertEqual(status_result.total_count, 2)
             self.assertEqual(status_result.completed_count, 1)
@@ -682,10 +682,10 @@ class TestStatusCommand(unittest.TestCase):
             reqs_md.write_text(md_content)
 
             # Initialize first
-            api_init(tmpdir)
+            reqsnake_init(tmpdir)
 
             # Test status
-            status_result = api_status(tmpdir)
+            status_result = reqsnake_status(tmpdir)
 
             self.assertEqual(status_result.total_count, 0)
             self.assertEqual(status_result.completed_count, 0)
@@ -744,7 +744,7 @@ class TestStatusCommand(unittest.TestCase):
             reqs_md = Path(tmpdir) / "reqs.md"
             reqs_md.write_text(md)
             with self.assertRaises(ValueError) as ctx:
-                api_init(tmpdir)
+                reqsnake_init(tmpdir)
             self.assertIn("REQ-2", str(ctx.exception))
             self.assertIn("REQ-1", str(ctx.exception))
 
@@ -755,7 +755,7 @@ class TestStatusCommand(unittest.TestCase):
             reqs_md = Path(tmpdir) / "reqs.md"
             reqs_md.write_text(md)
             # Should not raise
-            api_init(tmpdir)
+            reqsnake_init(tmpdir)
 
     def test_visual_dot_generation(self) -> None:
         """REQ-VISUAL-1: The tool shall generate a Graphviz dot file from requirements.lock."""

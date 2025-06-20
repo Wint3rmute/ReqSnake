@@ -439,7 +439,7 @@ def validate_no_cycles(requirements: list[Requirement]) -> None:
 
 
 # --- Python API ---
-def api_init(directory: Optional[str] = None) -> InitResult:
+def reqsnake_init(directory: Optional[str] = None) -> InitResult:
     """Scan Markdown files and create requirements.lock."""
     dir_path = Path(directory) if directory else Path.cwd()
     md_files = find_markdown_files(dir_path)
@@ -456,7 +456,9 @@ def api_init(directory: Optional[str] = None) -> InitResult:
     return InitResult(md_files, requirements)
 
 
-def api_check(directory: Optional[str] = None) -> Tuple[CheckResult, Dict[str, Path]]:
+def reqsnake_check(
+    directory: Optional[str] = None,
+) -> Tuple[CheckResult, Dict[str, Path]]:
     """Scan Markdown files and compare to requirements.lock, returning file info for each requirement."""
     dir_path = Path(directory) if directory else Path.cwd()
     lockfile_path = dir_path / "requirements.lock"
@@ -477,7 +479,7 @@ def api_check(directory: Optional[str] = None) -> Tuple[CheckResult, Dict[str, P
     return CheckResult(md_files, diff), req_id_to_file
 
 
-def api_lock(directory: Optional[str] = None) -> LockResult:
+def reqsnake_lock(directory: Optional[str] = None) -> LockResult:
     """Scan Markdown files and update requirements.lock."""
     dir_path = Path(directory) if directory else Path.cwd()
     md_files = find_markdown_files(dir_path)
@@ -508,7 +510,7 @@ def api_lock(directory: Optional[str] = None) -> LockResult:
     return LockResult(md_files, requirements)
 
 
-def api_status(directory: Optional[str] = None) -> StatusResult:
+def reqsnake_status(directory: Optional[str] = None) -> StatusResult:
     """Scan Markdown files and return status information about requirements.
 
     Args:
@@ -691,7 +693,7 @@ def generate_dot_from_lockfile(lockfile_path: Path, output_path: Path) -> None:
 # --- CLI Entrypoint ---
 def cli_init(args: argparse.Namespace) -> None:
     """Handle the 'init' CLI command."""
-    init_result = api_init()
+    init_result = reqsnake_init()
     print_scanned_files(init_result.scanned_files)
     print(
         f"✅ Initialized requirements.lock with {len(init_result.requirements)} requirements."
@@ -701,7 +703,7 @@ def cli_init(args: argparse.Namespace) -> None:
 def cli_check(args: argparse.Namespace) -> None:
     """Handle the 'check' CLI command."""
     try:
-        check_result, req_id_to_file = api_check()
+        check_result, req_id_to_file = reqsnake_check()
     except FileNotFoundError:
         print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
@@ -747,6 +749,8 @@ def cli_lock(args: argparse.Namespace) -> None:
             md_text = f.read()
         reqs = parse_requirements_from_markdown(md_text)
         requirements.extend(reqs)
+    validate_completed_children(requirements)
+    validate_no_cycles(requirements)
     # Check if lockfile exists and is up-to-date
     lockfile_exists = lockfile_path.is_file()
     up_to_date = False
@@ -767,7 +771,7 @@ def cli_lock(args: argparse.Namespace) -> None:
 def cli_status(args: argparse.Namespace) -> None:
     """Handle the 'status' CLI command."""
     try:
-        status_result = api_status()
+        status_result = reqsnake_status()
     except FileNotFoundError:
         print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
@@ -780,7 +784,7 @@ def cli_status(args: argparse.Namespace) -> None:
 def cli_status_md(args: argparse.Namespace) -> None:
     """Handle the 'status-md' CLI command."""
     try:
-        status_result = api_status()
+        status_result = reqsnake_status()
     except FileNotFoundError:
         print("❌ requirements.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
