@@ -7,7 +7,7 @@ import shutil
 import json
 from reqsnake import (
     Requirement,
-    parse_requirements_from_markdown,
+    _parse_requirements_from_markdown,
     reqsnake_init,
     reqsnake_lock,
     reqsnake_status,
@@ -24,7 +24,7 @@ class TestRequirementParser(unittest.TestCase):
     def test_single_requirement(self) -> None:
         """Test parsing a single requirement with critical and children."""
         md = "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n> child-of: MECH-54\n> child-of: MECH-57"
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             reqs[0],
@@ -50,7 +50,7 @@ class TestRequirementParser(unittest.TestCase):
 >
 > child-of: AVIO-16
 """
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 2)
         self.assertEqual(
             reqs[0],
@@ -77,7 +77,7 @@ class TestRequirementParser(unittest.TestCase):
 > SW-33
 > On-board software for the plane.
 """
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             reqs[0],
@@ -99,7 +99,7 @@ Some text.
 > The wing must withstand 5g load.
 > critical
 """
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "MECH-123")
 
@@ -115,7 +115,7 @@ Some text.
 > Another requirement with the same ID.
 """
         with self.assertRaises(ValueError) as context:
-            parse_requirements_from_markdown(md)
+            _parse_requirements_from_markdown(md)
         self.assertIn(
             "Duplicate requirement ID found: MECH-123", str(context.exception)
         )
@@ -123,7 +123,7 @@ Some text.
     def test_child_of_syntax(self) -> None:
         """Test that 'child-of' is supported as a child relationship key."""
         md = "> REQ-1\n> Parent requirement.\n> child-of REQ-2\n> child-of: REQ-3\n> CHILD-OF req-5\n> child-of: REQ-6\n"
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             set(reqs[0].children),
@@ -133,7 +133,7 @@ Some text.
     def test_child_of_whitespace_and_case(self) -> None:
         """Test that 'child-of' is parsed case-insensitively and trims whitespace."""
         md = "> REQ-1\n> Parent.\n>   CHILD-OF:   REQ-2   \n> child-of   REQ-3\n> child-OF:REQ-4\n"
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             set(reqs[0].children),
@@ -145,31 +145,31 @@ Some text.
         # Duplicate via 'child-of' (exact)
         md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n> child-of: REQ-2\n"
         with self.assertRaises(ValueError) as ctx:
-            parse_requirements_from_markdown(md)
+            _parse_requirements_from_markdown(md)
         self.assertIn("Duplicate child ID", str(ctx.exception))
         # Duplicate across 'child-of' forms (case-insensitive)
         md2 = "> REQ-1\n> Parent.\n> child-of REQ-2\n> child-of: req-2\n"
         with self.assertRaises(ValueError) as ctx:
-            parse_requirements_from_markdown(md2)
+            _parse_requirements_from_markdown(md2)
         self.assertIn("Duplicate child ID", str(ctx.exception))
         # Duplicate with whitespace differences
         md3 = "> REQ-1\n> Parent.\n> child-of:   REQ-2   \n> child-of: REQ-2\n"
         with self.assertRaises(ValueError) as ctx:
-            parse_requirements_from_markdown(md3)
+            _parse_requirements_from_markdown(md3)
         self.assertIn("Duplicate child ID", str(ctx.exception))
 
     def test_multiple_child_lines_and_duplicates(self) -> None:
         """REQ-PARSER-9/99: Multiple 'child-of' lines are allowed, but duplicates must raise an error."""
         md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-2\n> child-of: REQ-3"
         with self.assertRaises(ValueError) as ctx:
-            parse_requirements_from_markdown(md)
+            _parse_requirements_from_markdown(md)
         self.assertIn("Duplicate child ID 'REQ-2'", str(ctx.exception))
 
     def test_requirement_id_format_enforced(self) -> None:
         """REQ-CORE-6: IDs must be in the form <STRING>-<NUMBER>."""
         # Valid IDs
         valid_md = "> REQ-1\n> Valid.\n\n> SW-33\n> Valid.\n\n> A-0\n> Valid.\n"
-        reqs = parse_requirements_from_markdown(valid_md)
+        reqs = _parse_requirements_from_markdown(valid_md)
         self.assertEqual(len(reqs), 3)
         # Invalid IDs
         invalid_cases = [
@@ -183,7 +183,7 @@ Some text.
         ]
         for md in invalid_cases:
             with self.assertRaises(ValueError, msg=md):
-                parse_requirements_from_markdown(md)
+                _parse_requirements_from_markdown(md)
 
 
 class TestRequirePyScenarios(unittest.TestCase):
@@ -389,13 +389,13 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
     def test_ignore_blockquotes_with_only_id_or_description(self) -> None:
         """REQ-PARSER-6: Ignore blockquotes with only an ID or only a description."""
         md = "> ONLY-ID\n>\n\n>\n> Only description."
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 0)
 
     def test_ignore_extra_blank_lines_and_whitespace(self) -> None:
         """REQ-PARSER-7: Ignore extra blank lines or whitespace within blockquotes."""
         md = "> REQ-1\n>   The requirement.   \n>   \n> critical   "
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].description, "The requirement.")
         self.assertTrue(reqs[0].critical)
@@ -404,48 +404,48 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
         """REQ-PARSER-8: Attribute keywords are case-insensitive and ignore spaces. 'child:' is now an error as unknown attribute."""
         md = "> REQ-1\n> Test.\n>   CrItIcAl  \n>   CHILD: REQ-2  \n>   COMPLETED  "
         with self.assertRaises(ValueError) as ctx:
-            parse_requirements_from_markdown(md)
+            _parse_requirements_from_markdown(md)
         self.assertIn("Unknown atttribute 'child: req-2'", str(ctx.exception))
 
     def test_multiple_child_lines_and_duplicates(self) -> None:
         """REQ-PARSER-9/99: Multiple 'child-of' lines are allowed, but duplicates must raise an error."""
         md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-2\n> child-of: REQ-3"
         with self.assertRaises(ValueError) as ctx:
-            parse_requirements_from_markdown(md)
+            _parse_requirements_from_markdown(md)
         self.assertIn("Duplicate child ID 'REQ-2'", str(ctx.exception))
 
     def test_ignore_unknown_attributes(self) -> None:
         """REQ-PARSER-10: Unknown attributes in blockquotes now raise an error."""
         md = "> REQ-1\n> Test.\n> priority: high\n> foo: bar"
         with self.assertRaises(ValueError) as ctx:
-            parse_requirements_from_markdown(md)
+            _parse_requirements_from_markdown(md)
         self.assertIn("Unknown atttribute 'priority: high'", str(ctx.exception))
 
     def test_case_sensitive_ids(self) -> None:
         """REQ-PARSER-11: IDs are case-sensitive; allow IDs differing only by case."""
         md = "> REQ-1\n> Test.\n\n> req-1\n> Test."
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 2)
         self.assertNotEqual(reqs[0].req_id, reqs[1].req_id)
 
     def test_inconsistent_blockquote_lines(self) -> None:
         """REQ-PARSER-12: Only lines starting with '>' are considered (strict mode)."""
         md = "> REQ-1\nTest.\n> critical"
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         # Strict: both ID and description must start with '>'
         self.assertEqual(len(reqs), 0)
 
     def test_ignore_markdown_formatting(self) -> None:
         """REQ-PARSER-13: Ignore Markdown formatting inside blockquotes."""
         md = "> REQ-1\n> **Bold description** _italic_ `code`\n> critical"
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertIn("Bold description", reqs[0].description)
 
     def test_ignore_blockquotes_with_blank_lines(self) -> None:
         """REQ-PARSER-14: Blockquotes that span multiple paragraphs (blank lines) now raise error for unknown attribute."""
         md = "> REQ-1\n> First line.\n>\n> Second paragraph."
         with self.assertRaises(ValueError) as ctx:
-            parse_requirements_from_markdown(md)
+            _parse_requirements_from_markdown(md)
         self.assertIn("Unknown atttribute 'second paragraph.'", str(ctx.exception))
 
     def test_circular_child_relationship(self) -> None:
@@ -464,7 +464,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
         """REQ-PARSER-16: Only ASCII IDs are allowed; Unicode IDs should raise an error."""
         md = "> REQ-ÜNICODE-1\n> Some description.\n> child-of: ASCII-2"
         with self.assertRaises(ValueError):
-            parse_requirements_from_markdown(md)
+            _parse_requirements_from_markdown(md)
 
     def test_ignore_blockquotes_in_comments(self) -> None:
         """REQ-PARSER-17: Ignore blockquotes inside HTML comments."""
@@ -476,14 +476,14 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
 > REQ-2
 > Should be parsed.
 """
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "REQ-2")
 
     def test_mixed_line_endings_and_whitespace(self) -> None:
         """REQ-PARSER-18: Handle files with mixed line endings and leading/trailing whitespace."""
         md = "> REQ-1\r\n>   Test.   \r\n> critical\n"
-        reqs = parse_requirements_from_markdown(md)
+        reqs = _parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].description, "Test.")
         self.assertTrue(reqs[0].critical)
