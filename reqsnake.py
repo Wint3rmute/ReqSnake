@@ -478,10 +478,10 @@ def _validate_no_cycles(requirements: list[Requirement]) -> None:
             visit(req.req_id, [])
 
 
-def _find_and_validate_requirements(
+def _find_and_parse_requirements(
     root_dir: Path,
-) -> Tuple[list[Path], list[Requirement]]:
-    """Find all markdown files, parse them, and run all validation checks."""
+) -> Tuple[list[Path], list[Requirement], list[ParsedRequirement]]:
+    """Find all markdown files, parse them, and return both requirements and parsed requirements with file associations."""
     md_files = _find_markdown_files(root_dir)
     all_parsed_reqs: list[ParsedRequirement] = []
     for md_file in md_files:
@@ -496,6 +496,16 @@ def _find_and_validate_requirements(
         except ValueError as e:
             raise ValueError(f"Error in file '{md_file}': {e}") from e
 
+    all_reqs = [pr.requirement for pr in all_parsed_reqs]
+    return md_files, all_reqs, all_parsed_reqs
+
+
+def _find_and_validate_requirements(
+    root_dir: Path,
+) -> Tuple[list[Path], list[Requirement]]:
+    """Find all markdown files, parse them, and run all validation checks."""
+    md_files, all_reqs, all_parsed_reqs = _find_and_parse_requirements(root_dir)
+
     # Validate for duplicate IDs across all files
     seen_ids: dict[str, Path] = {}
     for parsed_req in all_parsed_reqs:
@@ -508,8 +518,6 @@ def _find_and_validate_requirements(
                 f"First defined in '{first_file}'."
             )
         seen_ids[req_id] = parsed_req.source_file
-
-    all_reqs = [pr.requirement for pr in all_parsed_reqs]
 
     _validate_no_cycles(all_reqs)
     _validate_completed_children(all_reqs)
@@ -535,10 +543,25 @@ def reqsnake_check(
     lockfile_path = dir_path / "reqsnake.lock"
     if not lockfile_path.is_file():
         raise FileNotFoundError("reqsnake.lock not found. Run 'init' first.")
-    md_files, requirements = _find_and_validate_requirements(dir_path)
-    parsed_reqs: list[ParsedRequirement] = []
-    for md_file in md_files:
-        parsed_reqs.extend(_parse_requirements_from_file(md_file))
+    md_files, requirements, parsed_reqs = _find_and_parse_requirements(dir_path)
+
+    # Validate for duplicate IDs across all files
+    seen_ids: dict[str, Path] = {}
+    for parsed_req in parsed_reqs:
+        req_id = parsed_req.requirement.req_id
+        source_file = parsed_req.source_file.relative_to(dir_path)
+        if req_id in seen_ids:
+            first_file = seen_ids[req_id].relative_to(dir_path)
+            raise ValueError(
+                f"Duplicate requirement ID '{req_id}' found in '{source_file}'. "
+                f"First defined in '{first_file}'."
+            )
+        seen_ids[req_id] = parsed_req.source_file
+
+    # Validate the parsed requirements
+    _validate_no_cycles(requirements)
+    _validate_completed_children(requirements)
+
     lock_reqs = _load_lockfile(lockfile_path)
     diff = _diff_requirements(lock_reqs, requirements)
     req_id_to_file: Dict[str, Path] = {
@@ -592,11 +615,8 @@ def reqsnake_status(directory: Optional[str] = None) -> StatusResult:
     lock_reqs = _load_lockfile(lockfile_path)
     _validate_completed_children(lock_reqs)
 
-    # Get file associations for requirements
-    md_files = _find_markdown_files(dir_path)
-    parsed_reqs: list[ParsedRequirement] = []
-    for md_file in md_files:
-        parsed_reqs.extend(_parse_requirements_from_file(md_file))
+    # Get file associations for requirements using consolidated parsing
+    _, _, parsed_reqs = _find_and_parse_requirements(dir_path)
 
     # Create a mapping from requirement ID to ParsedRequirement
     req_id_to_parsed: dict[str, ParsedRequirement] = {}
@@ -627,14 +647,6 @@ def reqsnake_status(directory: Optional[str] = None) -> StatusResult:
         critical_count=critical_count,
         critical_completed_count=critical_completed_count,
     )
-
-
-def _parse_requirements_from_file(md_file: Path) -> list[ParsedRequirement]:
-    """Parse requirements from a Markdown file, returning ParsedRequirement with file path."""
-    with md_file.open("r", encoding="utf-8") as f:
-        md_text = f.read()
-    reqs = _parse_requirements_from_markdown(md_text)
-    return [ParsedRequirement(r, md_file) for r in reqs]
 
 
 def _generate_status_markdown(status_result: StatusResult) -> str:
