@@ -41,7 +41,7 @@ requirements as Markdown blockquotes in any file you see fit. Example:
 > critical
 
 > REQ-CORE-2
-> A valid requirement is a blockquote with requirement ID as the first line, requirement description as a second line and additional fields as lines below.
+> A valid requirement is a blockquote with unique requirement ID as the first line, requirement description as a second line and additional fields as lines below.
 > critical
 
 > REQ-CORE-3

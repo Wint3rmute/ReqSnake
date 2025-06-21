@@ -12,4 +12,4 @@
 
 > REQ-OUTPUT-4
 > The reqsnake.lock file shall contain the version of application which generated it.
-> child-of: REQ-CORE-3
+> child-of: REQ-CORE-9

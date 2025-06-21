@@ -10,7 +10,7 @@
     },
     {
       "req_id": "REQ-CORE-2",
-      "description": "A valid requirement is a blockquote with requirement ID as the first line, requirement description as a second line and additional fields as lines below.",
+      "description": "A valid requirement is a blockquote with unique requirement ID as the first line, requirement description as a second line and additional fields as lines below.",
       "critical": true,
       "children": [],
       "completed": false
@@ -67,22 +67,8 @@
       "description": "The reqsnake.lock file shall contain the version of application which generated it.",
       "critical": false,
       "children": [
-        "REQ-CORE-3"
+        "REQ-CORE-9"
       ],
-      "completed": false
-    },
-    {
-      "req_id": "REQ-CORE-2",
-      "description": "Each requirement shall have a unique ID, description, and may have critical, child, and completed attributes.",
-      "critical": true,
-      "children": [],
-      "completed": false
-    },
-    {
-      "req_id": "REQ-CORE-3",
-      "description": "The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.",
-      "critical": true,
-      "children": [],
       "completed": false
     },
     {
@@ -115,7 +101,7 @@
     },
     {
       "req_id": "REQ-CORE-9",
-      "description": "The tool shall provide tools for visualisation of the current state of requirements.",
+      "description": "The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.",
       "critical": true,
       "children": [],
       "completed": false

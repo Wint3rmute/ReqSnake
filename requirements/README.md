@@ -10,13 +10,7 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 
 ## ReqSnake - core requirements
 
-> REQ-CORE-2
-> Each requirement shall have a unique ID, description, and may have critical, child, and completed attributes.
-> critical
-
-> REQ-CORE-3
-> The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.
-> critical
+(first 2 core requirements are defined in [README.md](../README.md)).
 
 > REQ-CORE-4
 > The tool shall provide a command-line interface (CLI) for managing requirements.
@@ -25,7 +19,6 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 > REQ-CORE-5
 > Child relationships shall be described with a "child-of" key. Example: "child-of REQ-123"
 > critical
-
 
 > REQ-CORE-7
 > A requirement can only be marked as completed once all of its child requirements have been marked as completed
@@ -36,5 +29,5 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 > critical
 
 > REQ-CORE-9
-> The tool shall provide tools for visualisation of the current state of requirements.
+> The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.
 > critical
