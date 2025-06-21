@@ -36,14 +36,24 @@ notes, or something like a MkDocs website. Open up your docs and start defining
 requirements as Markdown blockquotes in any file you see fit. Example:
 
 ```
-> REQ-1
-> The system shall support user authentication.
+> REQ-CORE-1
+> ReqSnake shall parse requirements from Markdown files using blockquote syntax.
 > critical
 
-> REQ-2
-> The system shall store user credentials securely.
-> child-of: REQ-1
-> completed
+> REQ-CORE-2
+> A valid requirement is a blockquote with requirement ID as the first line, requirement description as a second line and additional fields as lines below.
+> critical
+
+> REQ-CORE-3
+> Each requirement ID shall be in a form of "<STRING>-<NUMBER>". Where NUMBER is an integer.
+> child-of REQ-CORE-2
+> critical
+
+> REQ-PARSER-1
+> The Markdown parser shall extract requirements from Markdown blockquotes compliant with the specified format.
+> child-of: REQ-CORE-1
+> child-of: REQ-CORE-2
+> child-of: REQ-CORE-3
 ```
 
 That's all you have to do to start working with ReqSnake! Simply extend your

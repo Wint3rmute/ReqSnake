@@ -155,7 +155,6 @@ def _parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
     md_text = _re.sub(r"<!--.*?-->", "", md_text, flags=_re.DOTALL)
 
     requirements: list[Requirement] = []
-    seen_ids: Set[str] = set()
     for block in BLOCKQUOTE_PATTERN.findall(md_text):
         # Only consider lines starting with '>' (REQ-PARSER-12)
         lines = [line[2:].strip() for line in block.split("\n") if line.startswith(">")]
@@ -180,9 +179,6 @@ def _parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
             raise ValueError(
                 f"Requirement ID '{req_id}' contains non-ASCII characters, which are not allowed. (REQ-CORE-6)"
             )
-        if req_id in seen_ids:
-            raise ValueError(f"Duplicate requirement ID found: {req_id}")
-        seen_ids.add(req_id)
         description = lines[1]
         critical = False
         completed = False
@@ -453,43 +449,78 @@ def _validate_completed_children(requirements: list[Requirement]) -> None:
 
 
 def _validate_no_cycles(requirements: list[Requirement]) -> None:
-    """Raise ValueError if any circular child relationship is detected (REQ-PARSER-15)."""
-    req_dict = {r.req_id: r for r in requirements}
-    visited_global = set()
+    """Raise ValueError if a circular dependency is detected in the requirements graph."""
+    adj: dict[str, list[str]] = {req.req_id: req.children for req in requirements}
+    visiting: set[str] = set()  # For the current traversal path
+    visited: set[str] = set()  # For all nodes ever visited
 
     def visit(req_id: str, path: list[str]) -> None:
-        if req_id in path:
-            cycle = path[path.index(req_id) :] + [req_id]
-            raise ValueError(f"Circular dependency detected: {' -> '.join(cycle)}")
-        if req_id in visited_global:
-            return
+        visiting.add(req_id)
         path.append(req_id)
-        for parent_id in req_dict[req_id].children:
-            if parent_id in req_dict:
-                visit(parent_id, path)
+        for child_id in adj.get(req_id, []):
+            if child_id in visiting:
+                path.append(child_id)
+                raise ValueError(
+                    f"Circular dependency detected: {' -> '.join(path)} (REQ-PARSER-15)"
+                )
+            if child_id not in visited:
+                visit(child_id, path)
         path.pop()
-        visited_global.add(req_id)
+        visiting.remove(req_id)
+        visited.add(req_id)
 
     for req in requirements:
-        visit(req.req_id, [])
+        if req.req_id not in visited:
+            visit(req.req_id, [])
+
+
+def _find_and_validate_requirements(
+    root_dir: Path,
+) -> Tuple[list[Path], list[Requirement]]:
+    """Find all markdown files, parse them, and run all validation checks."""
+    md_files = _find_markdown_files(root_dir)
+    all_parsed_reqs: list[ParsedRequirement] = []
+    for md_file in md_files:
+        try:
+            reqs = _parse_requirements_from_markdown(md_file.read_text("utf-8"))
+            all_parsed_reqs.extend(
+                [
+                    ParsedRequirement(requirement=req, source_file=md_file)
+                    for req in reqs
+                ]
+            )
+        except ValueError as e:
+            raise ValueError(f"Error in file '{md_file}': {e}") from e
+
+    # Validate for duplicate IDs across all files
+    seen_ids: dict[str, Path] = {}
+    for parsed_req in all_parsed_reqs:
+        req_id = parsed_req.requirement.req_id
+        source_file = parsed_req.source_file.relative_to(root_dir)
+        if req_id in seen_ids:
+            first_file = seen_ids[req_id].relative_to(root_dir)
+            raise ValueError(
+                f"Duplicate requirement ID '{req_id}' found in '{source_file}'. "
+                f"First defined in '{first_file}'."
+            )
+        seen_ids[req_id] = parsed_req.source_file
+
+    all_reqs = [pr.requirement for pr in all_parsed_reqs]
+
+    _validate_no_cycles(all_reqs)
+    _validate_completed_children(all_reqs)
+
+    return md_files, all_reqs
 
 
 # --- Python API ---
 def reqsnake_init(directory: Optional[str] = None) -> InitResult:
-    """Scan Markdown files and create reqsnake.lock."""
-    dir_path = Path(directory) if directory else Path.cwd()
-    md_files = _find_markdown_files(dir_path)
-    requirements: list[Requirement] = []
-    for md_file in md_files:
-        with md_file.open("r", encoding="utf-8") as f:
-            md_text = f.read()
-        reqs = _parse_requirements_from_markdown(md_text)
-        requirements.extend(reqs)
-    _validate_no_cycles(requirements)
-    _validate_completed_children(requirements)
-    lockfile_path = dir_path / "reqsnake.lock"
-    _save_lockfile(lockfile_path, requirements)
-    return InitResult(md_files, requirements)
+    """Scan for markdown files, parse requirements, and create reqsnake.lock."""
+    root_dir = Path(directory) if directory else Path.cwd()
+    md_files, all_reqs = _find_and_validate_requirements(root_dir)
+    lockfile_path = root_dir / "reqsnake.lock"
+    _save_lockfile(lockfile_path, all_reqs)
+    return InitResult(md_files, all_reqs)
 
 
 def reqsnake_check(
@@ -500,13 +531,10 @@ def reqsnake_check(
     lockfile_path = dir_path / "reqsnake.lock"
     if not lockfile_path.is_file():
         raise FileNotFoundError("reqsnake.lock not found. Run 'init' first.")
-    md_files = _find_markdown_files(dir_path)
+    md_files, requirements = _find_and_validate_requirements(dir_path)
     parsed_reqs: list[ParsedRequirement] = []
     for md_file in md_files:
         parsed_reqs.extend(_parse_requirements_from_file(md_file))
-    requirements = [pr.requirement for pr in parsed_reqs]
-    _validate_completed_children(requirements)
-    _validate_no_cycles(requirements)
     lock_reqs = _load_lockfile(lockfile_path)
     diff = _diff_requirements(lock_reqs, requirements)
     req_id_to_file: Dict[str, Path] = {
@@ -518,15 +546,7 @@ def reqsnake_check(
 def reqsnake_lock(directory: Optional[str] = None) -> LockResult:
     """Scan Markdown files and update reqsnake.lock."""
     dir_path = Path(directory) if directory else Path.cwd()
-    md_files = _find_markdown_files(dir_path)
-    requirements: list[Requirement] = []
-    for md_file in md_files:
-        with md_file.open("r", encoding="utf-8") as f:
-            md_text = f.read()
-        reqs = _parse_requirements_from_markdown(md_text)
-        requirements.extend(reqs)
-    _validate_completed_children(requirements)
-    _validate_no_cycles(requirements)
+    md_files, requirements = _find_and_validate_requirements(dir_path)
     lockfile_path = dir_path / "reqsnake.lock"
     # Check if lockfile exists and is up-to-date
     lockfile_exists = lockfile_path.is_file()

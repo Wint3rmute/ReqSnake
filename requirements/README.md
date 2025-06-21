@@ -10,10 +10,6 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 
 ## ReqSnake - core requirements
 
-> REQ-CORE-1
-> The tool shall parse requirements from Markdown files using blockquote syntax.
-> critical
-
 > REQ-CORE-2
 > Each requirement shall have a unique ID, description, and may have critical, child, and completed attributes.
 > critical
@@ -30,9 +26,6 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 > Child relationships shall be described with a "child-of" key. Example: "child-of REQ-123"
 > critical
 
-> REQ-CORE-6
-> Each requirement shall be in a form of "<STRING>-<NUMBER>". Where NUMBER is an integer.
-> critical
 
 > REQ-CORE-7
 > A requirement can only be marked as completed once all of its child requirements have been marked as completed

@@ -1,8 +1,3 @@
-> REQ-PARSER-1
-> The parser shall extract requirements from Markdown blockquotes compliant with the specified format.
-> child-of: REQ-CORE-1
-> child-of: REQ-CORE-6
-
 > REQ-PARSER-2
 > The parser shall raise an error if a requirement ID is duplicated in the scanned files.
 > child-of: REQ-CORE-2

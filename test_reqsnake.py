@@ -11,6 +11,7 @@ from reqsnake import (
     reqsnake_init,
     reqsnake_lock,
     reqsnake_status,
+    reqsnake_check,
     StatusResult,
     _progress_bar,
 )
@@ -106,8 +107,8 @@ Some text.
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "MECH-123")
 
-    def test_duplicate_ids(self) -> None:
-        """Test that duplicate requirement IDs raise a ValueError."""
+    def test_duplicate_ids_same_file(self) -> None:
+        """Test that duplicate requirement IDs in the same file raise a ValueError."""
         md = """
 > MECH-123
 > The wing must withstand 5g load.
@@ -117,11 +118,13 @@ Some text.
 > MECH-123
 > Another requirement with the same ID.
 """
-        with self.assertRaises(ValueError) as context:
-            _parse_requirements_from_markdown(md)
-        self.assertIn(
-            "Duplicate requirement ID found: MECH-123", str(context.exception)
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "reqs.md").write_text(md)
+            with self.assertRaises(ValueError) as context:
+                reqsnake_init(tmpdir)
+            self.assertIn(
+                "Duplicate requirement ID 'MECH-123' found", str(context.exception)
+            )
 
     def test_child_of_syntax(self) -> None:
         """Test that 'child-of' is supported as a child relationship key."""
@@ -269,6 +272,52 @@ class TestRequirePyScenarios(unittest.TestCase):
             self.assertEqual(len(reqs), 1)
             req = reqs[0]
             self.assertIn("REQ-DOES-NOT-EXIST", req.children)
+
+    def test_init_duplicate_ids_different_files(self) -> None:
+        """Test that an error is raised when duplicate requirement IDs are found within multiple files during init."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_dir_path = Path(tmpdir)
+            (test_dir_path / "reqs1.md").write_text("> REQ-1\n> The first requirement.")
+            (test_dir_path / "reqs2.md").write_text(
+                "> REQ-1\n> The duplicated requirement."
+            )
+            with self.assertRaises(ValueError) as context:
+                reqsnake_init(tmpdir)
+            self.assertIn(
+                "Duplicate requirement ID 'REQ-1' found", str(context.exception)
+            )
+
+    def test_lock_duplicate_ids_different_files(self) -> None:
+        """Test that an error is raised when duplicate requirement IDs are found within multiple files during lock."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_dir_path = Path(tmpdir)
+            (test_dir_path / "reqs1.md").write_text("> REQ-1\n> The first requirement.")
+
+            reqsnake_init(tmpdir)
+            (test_dir_path / "reqs2.md").write_text(
+                "> REQ-1\n> The duplicated requirement."
+            )
+            with self.assertRaises(ValueError) as context:
+                reqsnake_lock(tmpdir)
+            self.assertIn(
+                "Duplicate requirement ID 'REQ-1' found", str(context.exception)
+            )
+
+    def test_check_duplicate_ids_different_files(self) -> None:
+        """Test that an error is raised when duplicate requirement IDs are found within multiple files during check."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_dir_path = Path(tmpdir)
+            (test_dir_path / "reqs1.md").write_text("> REQ-1\n> The first requirement.")
+
+            reqsnake_init(tmpdir)
+            (test_dir_path / "reqs2.md").write_text(
+                "> REQ-1\n> The duplicated requirement."
+            )
+            with self.assertRaises(ValueError) as context:
+                reqsnake_check(tmpdir)
+            self.assertIn(
+                "Duplicate requirement ID 'REQ-1' found", str(context.exception)
+            )
 
     def test_lock_idempotency(self) -> None:
         """Test that running reqsnake_lock twice without changes does not alter the lockfile (idempotency)."""
