@@ -112,6 +112,7 @@ class CheckResult:
 
     scanned_files: list[Path]
     diff: dict[DiffType, list[Requirement]]
+    req_id_to_file: Dict[str, Path]
 
 
 @dataclass(frozen=True)
@@ -537,7 +538,7 @@ def reqsnake_init(directory: Optional[str] = None) -> InitResult:
 
 def reqsnake_check(
     directory: Optional[str] = None,
-) -> Tuple[CheckResult, Dict[str, Path]]:
+) -> CheckResult:
     """Scan Markdown files and compare to reqsnake.lock, returning file info for each requirement."""
     dir_path = Path(directory) if directory else Path.cwd()
     lockfile_path = dir_path / "reqsnake.lock"
@@ -567,7 +568,7 @@ def reqsnake_check(
     req_id_to_file: Dict[str, Path] = {
         pr.requirement.req_id: pr.source_file for pr in parsed_reqs
     }
-    return CheckResult(md_files, diff), req_id_to_file
+    return CheckResult(md_files, diff, req_id_to_file)
 
 
 def reqsnake_lock(directory: Optional[str] = None) -> LockResult:
@@ -789,7 +790,7 @@ def cli_init(args: argparse.Namespace) -> None:
 def cli_check(args: argparse.Namespace) -> None:
     """Handle the 'check' CLI command."""
     try:
-        check_result, req_id_to_file = reqsnake_check()
+        check_result = reqsnake_check()
     except FileNotFoundError:
         print("❌ reqsnake.lock not found. Run 'reqsnake.py init' first.")
         sys.exit(1)
@@ -802,7 +803,9 @@ def cli_check(args: argparse.Namespace) -> None:
         if requirements:
             print(f"{symbol} {diff_type} requirements:")
             for req in requirements:
-                file_path = req_id_to_file.get(req.req_id, "<unknown file>")
+                file_path = check_result.req_id_to_file.get(
+                    req.req_id, "<unknown file>"
+                )
                 for i, line in enumerate(req.to_pretty_string().split("\n")):
                     prefix = f"  {symbol} " if i == 0 else "    "
                     if i == 0:
