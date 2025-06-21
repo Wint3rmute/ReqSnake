@@ -133,6 +133,22 @@ Some text.
             {"REQ-2", "REQ-3", "req-5", "REQ-6"},
         )
 
+    def test_normal_blockquote(self) -> None:
+        """Test that markdown blockquotes not containing requirements are skipped and don't cause errors."""
+        md = """
+# Some markdown content
+
+A bit of text
+
+> A blockquote
+> with multiple
+> lines
+
+Moar text!
+        """
+        reqs = _parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 0)
+
     def test_child_of_whitespace_and_case(self) -> None:
         """Test that 'child-of' is parsed case-insensitively and trims whitespace."""
         md = "> REQ-1\n> Parent.\n>   CHILD-OF:   REQ-2   \n> child-of   REQ-3\n> child-OF:REQ-4\n"

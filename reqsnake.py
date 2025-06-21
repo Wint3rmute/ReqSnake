@@ -165,6 +165,11 @@ def _parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
         if len(lines) < 2:
             continue
         req_id = lines[0]
+        # Heuristic: if the potential ID contains spaces, it's not a requirement.
+        # TODO: don't raise ValueError below if this heuristic is not enough.
+        # Maybe people like one-word blockquotes in markdown, who knows...?
+        if " " in req_id:
+            continue
         # Enforce REQ-CORE-6: ID must be <STRING>-<NUMBER> and ASCII only
         if not re.match(r"^[A-Za-z][A-Za-z0-9_-]*-\d+$", req_id):
             raise ValueError(
