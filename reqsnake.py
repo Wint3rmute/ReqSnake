@@ -608,6 +608,92 @@ def _parse_requirements_from_file(md_file: Path) -> list[ParsedRequirement]:
     return [ParsedRequirement(r, md_file) for r in reqs]
 
 
+def _generate_mermaid_diagram(status_result: StatusResult) -> str:
+    """Generate a Mermaid flowchart diagram representing the requirements hierarchy.
+
+    Args:
+        status_result: The StatusResult containing requirements and their relationships.
+
+    Returns:
+        str: Mermaid flowchart syntax as a string.
+
+    """
+    if not status_result.requirements:
+        return ""
+
+    lines = ["```mermaid", "flowchart TD"]
+
+    # Create a mapping from requirement ID to requirement
+    req_dict: dict[str, ParsedRequirement] = {
+        pr.requirement.req_id: pr for pr in status_result.requirements
+    }
+
+    # Track all children to find root nodes
+    all_children: set[str] = set()
+    for pr in status_result.requirements:
+        all_children.update(pr.requirement.children)
+
+    # Find root requirements (those that are not children of any other requirement)
+    root_reqs = [
+        pr
+        for pr in status_result.requirements
+        if pr.requirement.req_id not in all_children
+    ]
+
+    # Generate node definitions
+    for pr in status_result.requirements:
+        req = pr.requirement
+        node_id = req.req_id.replace(
+            "-", "_"
+        )  # Mermaid doesn't like hyphens in node IDs
+
+        # Determine node styling based on status
+        if req.completed:
+            if req.critical:
+                style = ":::completed-critical"
+            else:
+                style = ":::completed"
+        else:
+            if req.critical:
+                style = ":::critical"
+            else:
+                style = ":::pending"
+
+        # Truncate description for display
+        desc = (
+            req.description[:40] + "..."
+            if len(req.description) > 40
+            else req.description
+        )
+        desc = desc.replace('"', "'")  # Escape quotes for Mermaid
+
+        lines.append(f'    {node_id}["{req.req_id}<br/>{desc}"]{style}')
+
+    # Generate edges (parent-child relationships)
+    for pr in status_result.requirements:
+        req = pr.requirement
+        child_id = req.req_id.replace("-", "_")
+
+        for parent_id in req.children:
+            if parent_id in req_dict:
+                parent_node_id = parent_id.replace("-", "_")
+                lines.append(f"    {parent_node_id} --> {child_id}")
+
+    # Add CSS classes for styling
+    lines.extend(
+        [
+            "",
+            "    classDef pending fill:#f9f9f9,stroke:#333,stroke-width:2px",
+            "    classDef critical fill:#ffe6e6,stroke:#cc0000,stroke-width:3px",
+            "    classDef completed fill:#e6ffe6,stroke:#006600,stroke-width:2px",
+            "    classDef completed-critical fill:#e6ffe6,stroke:#cc0000,stroke-width:3px",
+            "```",
+        ]
+    )
+
+    return "\n".join(lines)
+
+
 def _generate_status_markdown(status_result: StatusResult) -> str:
     """Generate a Markdown report of requirements status from a StatusResult, with unicode block progress bars."""
     lines = []
@@ -621,6 +707,14 @@ def _generate_status_markdown(status_result: StatusResult) -> str:
         (critical_completed / critical) * 100 if critical > 0 else 0
     )
     lines.append("# Requirements Status Report\n")
+
+    # Add Mermaid diagram at the top
+    mermaid_diagram = _generate_mermaid_diagram(status_result)
+    if mermaid_diagram:
+        lines.append("## Requirements Hierarchy\n")
+        lines.append(mermaid_diagram)
+        lines.append("")
+
     lines.append("## Summary\n")
     lines.append(f"- **Total requirements:** {total}")
     lines.append(

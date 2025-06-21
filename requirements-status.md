@@ -1,5 +1,99 @@
 # Requirements Status Report
 
+## Requirements Hierarchy
+
+```mermaid
+flowchart TD
+    REQ_CORE_1["REQ-CORE-1<br/>The tool shall parse requirements from M..."]:::critical
+    REQ_CORE_2["REQ-CORE-2<br/>Each requirement shall have a unique ID,..."]:::critical
+    REQ_CORE_3["REQ-CORE-3<br/>The tool shall store requirements in a r..."]:::critical
+    REQ_CORE_4["REQ-CORE-4<br/>The tool shall provide a command-line in..."]:::critical
+    REQ_CORE_5["REQ-CORE-5<br/>Child relationships shall be described w..."]:::critical
+    REQ_CORE_6["REQ-CORE-6<br/>Each requirement shall be in a form of '..."]:::critical
+    REQ_CORE_7["REQ-CORE-7<br/>A requirement can only be marked as comp..."]:::critical
+    REQ_CORE_8["REQ-CORE-8<br/>The tool shall provide a CLI Python API ..."]:::critical
+    REQ_CORE_9["REQ-CORE-9<br/>The tool shall provide tools for visuali..."]:::critical
+    REQ_OUTPUT_1["REQ-OUTPUT-1<br/>The CLI shall provide a command to gener..."]:::pending
+    REQ_OUTPUT_2["REQ-OUTPUT-2<br/>The generated Markdown status file shall..."]:::pending
+    REQ_OUTPUT_3["REQ-OUTPUT-3<br/>The tool shall provide a command to gene..."]:::pending
+    REQ_OUTPUT_4["REQ-OUTPUT-4<br/>The reqsnake.lock file shall contain the..."]:::pending
+    REQ_TEST_1["REQ-TEST-1<br/>The parser shall provide unit tests for ..."]:::critical
+    REQ_TEST_2["REQ-TEST-2<br/>The application code provide integration..."]:::pending
+    REQ_TEST_3["REQ-TEST-3<br/>Integration tests shall verify that reqs..."]:::pending
+    REQ_TEST_4["REQ-TEST-4<br/>Integration tests shall verify that dupl..."]:::pending
+    REQ_CLI_1["REQ-CLI-1<br/>The CLI shall support the commands: init..."]:::pending
+    REQ_CLI_2["REQ-CLI-2<br/>The CLI shall print the Markdown files b..."]:::pending
+    REQ_CLI_3["REQ-CLI-3<br/>When the user runs `reqsnake.py lock` an..."]:::completed
+    REQ_CLI_4["REQ-CLI-4<br/>When displaying changed requirements wit..."]:::completed
+    REQ_CLI_5["REQ-CLI-5<br/>The application shall allow for specific..."]:::pending
+    REQ_CLI_6["REQ-CLI-6<br/>The CLI shall provide a `status` command..."]:::pending
+    REQ_CLI_7["REQ-CLI-7<br/>The `status` command shall display total..."]:::completed
+    REQ_CLI_8["REQ-CLI-8<br/>The `status` command shall group require..."]:::pending
+    REQ_CLI_9["REQ-CLI-9<br/>The `status` command shall display hiera..."]:::pending
+    REQ_PARSER_1["REQ-PARSER-1<br/>The parser shall extract requirements fr..."]:::pending
+    REQ_PARSER_2["REQ-PARSER-2<br/>The parser shall raise an error if a req..."]:::pending
+    REQ_PARSER_3["REQ-PARSER-3<br/>The parser shall support the 'critical',..."]:::pending
+    REQ_PARSER_4["REQ-PARSER-4<br/>The parser shall ignore non-blockquote c..."]:::pending
+    REQ_PARSER_5["REQ-PARSER-5<br/>The parser shall be dependency-free and ..."]:::pending
+    REQ_PARSER_6["REQ-PARSER-6<br/>The parser shall handle blockquotes with..."]:::pending
+    REQ_PARSER_7["REQ-PARSER-7<br/>The parser shall ignore extra blank line..."]:::pending
+    REQ_PARSER_8["REQ-PARSER-8<br/>The parser shall treat attribute keyword..."]:::pending
+    REQ_PARSER_9["REQ-PARSER-9<br/>The parser shall allow multiple 'child-o..."]:::pending
+    REQ_PARSER_10["REQ-PARSER-10<br/>The parser shall raise errors on unknown..."]:::pending
+    REQ_PARSER_11["REQ-PARSER-11<br/>The parser shall treat requirement IDs a..."]:::pending
+    REQ_PARSER_12["REQ-PARSER-12<br/>The parser shall handle blockquotes with..."]:::pending
+    REQ_PARSER_13["REQ-PARSER-13<br/>The parser shall ignore Markdown formatt..."]:::pending
+    REQ_PARSER_14["REQ-PARSER-14<br/>The parser shall ignore blockquotes that..."]:::pending
+    REQ_PARSER_15["REQ-PARSER-15<br/>The parser shall raise an error if a cir..."]:::pending
+    REQ_PARSER_16["REQ-PARSER-16<br/>The parser shall support requirements an..."]:::pending
+    REQ_PARSER_17["REQ-PARSER-17<br/>The parser shall ignore blockquotes that..."]:::pending
+    REQ_PARSER_18["REQ-PARSER-18<br/>The parser shall handle files with mixed..."]:::pending
+    REQ_PARSER_19["REQ-PARSER-19<br/>The parser shall raise errors on duplica..."]:::pending
+    REQ_CORE_9 --> REQ_OUTPUT_1
+    REQ_OUTPUT_1 --> REQ_OUTPUT_2
+    REQ_CORE_9 --> REQ_OUTPUT_3
+    REQ_CORE_3 --> REQ_OUTPUT_4
+    REQ_CORE_1 --> REQ_TEST_1
+    REQ_PARSER_1 --> REQ_TEST_1
+    REQ_CORE_1 --> REQ_TEST_2
+    REQ_CORE_1 --> REQ_TEST_3
+    REQ_CORE_1 --> REQ_TEST_4
+    REQ_CORE_4 --> REQ_CLI_1
+    REQ_CLI_1 --> REQ_CLI_2
+    REQ_CLI_1 --> REQ_CLI_3
+    REQ_CLI_1 --> REQ_CLI_4
+    REQ_CLI_2 --> REQ_CLI_6
+    REQ_CORE_9 --> REQ_CLI_6
+    REQ_CLI_6 --> REQ_CLI_7
+    REQ_CLI_6 --> REQ_CLI_8
+    REQ_CLI_6 --> REQ_CLI_9
+    REQ_CORE_1 --> REQ_PARSER_1
+    REQ_CORE_6 --> REQ_PARSER_1
+    REQ_CORE_2 --> REQ_PARSER_2
+    REQ_CORE_2 --> REQ_PARSER_3
+    REQ_CORE_1 --> REQ_PARSER_4
+    REQ_CORE_1 --> REQ_PARSER_5
+    REQ_CORE_1 --> REQ_PARSER_6
+    REQ_CORE_1 --> REQ_PARSER_7
+    REQ_CORE_2 --> REQ_PARSER_8
+    REQ_CORE_2 --> REQ_PARSER_9
+    REQ_CORE_2 --> REQ_PARSER_10
+    REQ_CORE_2 --> REQ_PARSER_11
+    REQ_CORE_1 --> REQ_PARSER_12
+    REQ_CORE_1 --> REQ_PARSER_13
+    REQ_CORE_1 --> REQ_PARSER_14
+    REQ_CORE_2 --> REQ_PARSER_15
+    REQ_CORE_1 --> REQ_PARSER_16
+    REQ_CORE_1 --> REQ_PARSER_17
+    REQ_CORE_1 --> REQ_PARSER_18
+    REQ_CORE_2 --> REQ_PARSER_19
+
+    classDef pending fill:#f9f9f9,stroke:#333,stroke-width:2px
+    classDef critical fill:#ffe6e6,stroke:#cc0000,stroke-width:3px
+    classDef completed fill:#e6ffe6,stroke:#006600,stroke-width:2px
+    classDef completed-critical fill:#e6ffe6,stroke:#cc0000,stroke-width:3px
+```
+
 ## Summary
 
 - **Total requirements:** 45
