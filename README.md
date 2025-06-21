@@ -32,12 +32,13 @@ However, in my engineering niche, I found a piece missing - ability to manage sy
 
 Huge, proprietary programs like:
 
-- IBM DOORS 
-- Enterprise architect
+- [IBM DOORS](https://www.ibm.com/docs/en/engineering-lifecycle-management-suite/doors/9.7.0?topic=overview-doors)
+- [Enterprise architect](https://sparxsystems.com/)
+- [Jama Software](https://www.jamasoftware.com/)
 
 ### 🐍 How is `ReqSnake` better?
 
-- It is a simple Python script
+- It is a simple Python CLI
     - No dependencies
     - No strings attached
 - It lets you manage dependencies/ via Markdown
@@ -46,6 +47,7 @@ Huge, proprietary programs like:
     - ...yeah we just commit a lockfile to `git`
     - `reqsnake.lock` file is used for change detection
     - It can warn you about deleting important dependencies
+- Want extra functionality? Extend ReqSnake by using its Pythonic API instead of the CLI
 
 ## ✍️ Requirements Syntax Example
 
