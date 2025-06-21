@@ -28,7 +28,7 @@ Open up your docs and start defining requirements as Markdown blockquotes. Examp
 
 > REQ-2
 > The system shall store user credentials securely.
-> child-of: REQ-0
+> child-of: REQ-1
 > completed
 ```
 
