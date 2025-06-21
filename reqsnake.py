@@ -679,18 +679,6 @@ def _generate_mermaid_diagram(status_result: StatusResult) -> str:
                 parent_node_id = parent_id.replace("-", "_")
                 lines.append(f"    {parent_node_id} --> {child_id}")
 
-    # Add CSS classes for styling
-    lines.extend(
-        [
-            "",
-            "    classDef pending fill:#f9f9f9,stroke:#333,stroke-width:2px",
-            "    classDef critical fill:#ffe6e6,stroke:#cc0000,stroke-width:3px",
-            "    classDef completed fill:#e6ffe6,stroke:#006600,stroke-width:2px",
-            "    classDef completed-critical fill:#e6ffe6,stroke:#cc0000,stroke-width:3px",
-            "```",
-        ]
-    )
-
     return "\n".join(lines)
 
 

@@ -88,12 +88,6 @@ flowchart LR
     REQ_CORE_1 --> REQ_PARSER_18
     REQ_CORE_2 --> REQ_PARSER_19
 
-    classDef pending fill:#f9f9f9,stroke:#333,stroke-width:2px
-    classDef critical fill:#ffe6e6,stroke:#cc0000,stroke-width:3px
-    classDef completed fill:#e6ffe6,stroke:#006600,stroke-width:2px
-    classDef completed-critical fill:#e6ffe6,stroke:#cc0000,stroke-width:3px
-```
-
 ## Summary
 
 - **Total requirements:** 45
