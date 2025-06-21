@@ -4,7 +4,7 @@
 This module provides both a CLI and a Python API for managing requirements defined in Markdown files.
 """
 import re
-from typing import Optional, Any, Set, NamedTuple, Tuple, Dict
+from typing import Optional, Any, Set, Tuple, Dict
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 import argparse
@@ -78,14 +78,16 @@ class Requirement:
         return "\n".join(lines)
 
 
-class InitResult(NamedTuple):
+@dataclass(frozen=True)
+class InitResult():
     """Result of the api_init function: scanned files and requirements."""
 
     scanned_files: list[Path]
     requirements: list[Requirement]
 
 
-class LockResult(NamedTuple):
+@dataclass(frozen=True)
+class LockResult():
     """Result of api_lock: scanned files and requirements."""
 
     scanned_files: list[Path]
@@ -103,8 +105,8 @@ class DiffType(Enum):
         """Return the lowercase name of the DiffType enum member."""
         return self.name.lower()
 
-
-class CheckResult(NamedTuple):
+@dataclass(frozen=True)
+class CheckResult():
     """Result of api_check: scanned files and diff dict."""
 
     scanned_files: list[Path]
@@ -119,7 +121,8 @@ class ParsedRequirement:
     source_file: Path
 
 
-class StatusResult(NamedTuple):
+@dataclass(frozen=True)
+class StatusResult():
     """Result of api_status: requirements with file associations and status summary."""
 
     requirements: list[ParsedRequirement]

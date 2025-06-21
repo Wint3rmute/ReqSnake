@@ -226,13 +226,15 @@ class TestRequirePyScenarios(unittest.TestCase):
 """
             reqs_md = test_dir_path / "reqs.md"
             reqs_md.write_text(md_content)
-            files, reqs = reqsnake_init(tmpdir)
+            init_result = reqsnake_init(tmpdir)
+            files, reqs = init_result.scanned_files, init_result.requirements
             self.assertIn(test_dir_path / "reqs.md", files)
             lockfile_path = test_dir_path / "reqsnake.lock"
             self.assertTrue(lockfile_path.exists())
             data = json.loads(lockfile_path.read_text())
             self.assertEqual(len(data["requirements"]), 2)
-            files2, reqs2 = reqsnake_init(tmpdir)
+            init_result = reqsnake_init(tmpdir)
+            files2, reqs2 = init_result.scanned_files, init_result.requirements
             self.assertEqual(files, files2)
             self.assertEqual(len(reqs2), 2)
             data2 = json.loads(lockfile_path.read_text())
@@ -268,7 +270,8 @@ class TestRequirePyScenarios(unittest.TestCase):
             )
             reqs_md = test_dir_path / "reqs.md"
             reqs_md.write_text(md_content)
-            files, reqs = reqsnake_init(tmpdir)
+            init_result = reqsnake_init(tmpdir)
+            files, reqs = init_result.scanned_files, init_result.requirements
             self.assertEqual(len(reqs), 1)
             req = reqs[0]
             self.assertIn("REQ-DOES-NOT-EXIST", req.children)
@@ -374,7 +377,8 @@ class TestRequirePyScenarios(unittest.TestCase):
             file2.write_text("> REQ-2\n> Requirement 2.\n")
             # Test literal ignore
             (test_dir_path / ".requirementsignore").write_text("ignoreme.md\n")
-            files, reqs = reqsnake_init(tmpdir)
+            init_result = reqsnake_init(tmpdir)
+            files, reqs = init_result.scanned_files, init_result.requirements
             scanned = {f.name for f in files}
             self.assertIn("reqs1.md", scanned)
             self.assertNotIn("ignoreme.md", scanned)
@@ -382,7 +386,8 @@ class TestRequirePyScenarios(unittest.TestCase):
             self.assertEqual(reqs[0].req_id, "REQ-1")
             # Test glob ignore
             (test_dir_path / ".requirementsignore").write_text("*ignore*.md\n")
-            files, reqs = reqsnake_init(tmpdir)
+            init_result = reqsnake_init(tmpdir)
+            files, reqs = init_result.scanned_files, init_result.requirements
             scanned = {f.name for f in files}
             self.assertIn("reqs1.md", scanned)
             self.assertNotIn("ignoreme.md", scanned)
@@ -390,7 +395,8 @@ class TestRequirePyScenarios(unittest.TestCase):
             self.assertEqual(reqs[0].req_id, "REQ-1")
             # Test negation (!)
             (test_dir_path / ".requirementsignore").write_text("*.md\n!reqs1.md\n")
-            files, reqs = reqsnake_init(tmpdir)
+            init_result = reqsnake_init(tmpdir)
+            files, reqs = init_result.scanned_files, init_result.requirements
             scanned = {f.name for f in files}
             self.assertIn("reqs1.md", scanned)
             self.assertNotIn("ignoreme.md", scanned)
@@ -398,7 +404,8 @@ class TestRequirePyScenarios(unittest.TestCase):
             self.assertEqual(reqs[0].req_id, "REQ-1")
             # Now remove .requirementsignore and both should be scanned
             (test_dir_path / ".requirementsignore").unlink()
-            files, reqs = reqsnake_init(tmpdir)
+            init_result = reqsnake_init(tmpdir)
+            files, reqs = init_result.scanned_files, init_result.requirements
             scanned = {f.name for f in files}
             self.assertIn("reqs1.md", scanned)
             self.assertIn("ignoreme.md", scanned)
