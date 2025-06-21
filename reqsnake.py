@@ -679,6 +679,14 @@ def _generate_mermaid_diagram(status_result: StatusResult) -> str:
                 parent_node_id = parent_id.replace("-", "_")
                 lines.append(f"    {parent_node_id} --> {child_id}")
 
+    # Add CSS classes for styling
+    lines.extend(
+        [
+            "",
+            "```",
+        ]
+    )
+
     return "\n".join(lines)
 
 

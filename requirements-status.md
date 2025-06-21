@@ -88,6 +88,8 @@ flowchart LR
     REQ_CORE_1 --> REQ_PARSER_18
     REQ_CORE_2 --> REQ_PARSER_19
 
+```
+
 ## Summary
 
 - **Total requirements:** 45
