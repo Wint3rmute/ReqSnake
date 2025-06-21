@@ -60,27 +60,54 @@ That's all you have to do to start working with ReqSnake! Simply extend your
 existing Markdown documentation with requirements definition and start tracing
 what you're building.
 
+From now on, ReqSnake will:
+
+- Check dependencies of requirements before letting you mark them as completed
+  - Errors are reported when trying to complete a requirement with uncompleted child dependencies
+- Raise errors upon encountering duplicate requirement IDs
+- Generate reports showing the status of requirements and their dependencies
+- Help you review the changes you've made to dependencies
+
 ## ⚡ Installation & quick-start guide
 
 ```bash
+# Download ReqSnake from this GitHub repo
 wget https://raw.githubusercontent.com/Wint3rmute/ReqSnake/refs/heads/main/reqsnake.py
+
+# Make the file executable for convenience
 chmod +x reqsnake.py
+
+# Initialize ReqSnake:
+#   - Scan Markdown files in your working directory
+#   - Read all defined requirements
+#   - Save them into `reqsnake.lock`
 ./reqsnake.py init
 ```
 
-The commands above will:
+Go ahead and write some requirements now. Once you have them, write:
 
-1. Download ReqSnake
-   - There are no dependencies, just a Python installation in your system
-2. Make the script executable
-3. Initialize ReqSnake. This will:
-   - Scan Markdown files in your working directory
-   - Read all defined requirements
-   - Save them into `reqsnake.lock`
+```bash
+# Check the correctnes and display changes made to the requirements
+./reqsnake.py check
+
+# Snapshot the current version of requirements to `reqsnake.lock`
+./reqsnake.py lock
+
+# Display the completion status of defined requirements
+./reqsnake.py status
+
+# Generate a Markdown report with the status of your requirements
+./reqsnake.py status-markdown
+# ^ Tip: add this into your static site generation process!
+```
 
 ## 💎 Value Proposition
 
-Between small, one-person projects and huge corporate enterprise-grade software, there's a large niche of medium-sized projects. They may be done by a sigle team or by a small/medium company. Across such projects, Markdown is a widely used tool, mostly for documentation. There's a ton of amazing Markdown tooling around:
+Between small, one-person projects and huge corporate enterprise-grade
+software, there's a large niche of medium-sized projects. They may be done by a
+sigle team or by a small/medium company. Across such projects, Markdown is a
+widely used tool, mostly for documentation. There's a ton of amazing Markdown
+tooling around:
 
 - 📚 MkDocs
 - 🗒️ Joplin
@@ -88,7 +115,8 @@ Between small, one-person projects and huge corporate enterprise-grade software,
 - 🦄 Zola
 - ✨ You name it!
 
-However, I found a piece missing - ability to manage project requirements within my Markdown documentation!
+However, I found a piece missing - ability to manage project requirements
+within my Markdown documentation!
 
 ### 🏢 What software exists currently?
 
