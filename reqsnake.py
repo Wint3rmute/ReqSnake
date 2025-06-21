@@ -79,7 +79,7 @@ class Requirement:
 
 
 @dataclass(frozen=True)
-class InitResult():
+class InitResult:
     """Result of the api_init function: scanned files and requirements."""
 
     scanned_files: list[Path]
@@ -87,7 +87,7 @@ class InitResult():
 
 
 @dataclass(frozen=True)
-class LockResult():
+class LockResult:
     """Result of api_lock: scanned files and requirements."""
 
     scanned_files: list[Path]
@@ -105,8 +105,9 @@ class DiffType(Enum):
         """Return the lowercase name of the DiffType enum member."""
         return self.name.lower()
 
+
 @dataclass(frozen=True)
-class CheckResult():
+class CheckResult:
     """Result of api_check: scanned files and diff dict."""
 
     scanned_files: list[Path]
@@ -122,7 +123,7 @@ class ParsedRequirement:
 
 
 @dataclass(frozen=True)
-class StatusResult():
+class StatusResult:
     """Result of api_status: requirements with file associations and status summary."""
 
     requirements: list[ParsedRequirement]

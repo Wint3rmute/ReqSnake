@@ -113,7 +113,12 @@ Huge, expensive, proprietary programs like:
 Want extra functionality? Extend ReqSnake by using its Pythonic API instead of the CLI:
 
 ```python
-# TODO: example here
+from reqsnake import reqsnake_lock
+
+requirements = reqsnake_lock().requirements
+for requirement in requirements:
+  print("Processing", requirement.req_id)
+  # Do anything you want here
 ```
 
 ## 📖 Examples
