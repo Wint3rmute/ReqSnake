@@ -5,6 +5,7 @@ import tempfile
 import os
 import shutil
 import json
+import random
 from reqsnake import (
     Requirement,
     _parse_requirements_from_markdown,
@@ -210,6 +211,87 @@ Moar text!
 
 class TestRequirePyScenarios(unittest.TestCase):
     """Integration tests for ReqSnake scenarios as described in ARCHITECTURE.md."""
+
+    def test_stress(self) -> None:
+        """Test init and re-init scenarios for requirements management."""
+        starting_words = [
+            "system",
+            "user",
+            "interface",
+            "database",
+            "network",
+            "security",
+            "performance",
+            "module",
+            "feature",
+            "service",
+            "api",
+            "authentication",
+            "authorization",
+            "logging",
+            "handling",
+        ]
+
+        ending_words = [
+            "report errors",
+            "satisfy the user",
+            "crash and burn",
+            "support users emotionally",
+            "generate reports that no one will read",
+            "cause a segfault",
+            "make the user understand what sehnsucht means",
+            "sacrifice goats",
+            "eat the user's soul",
+            "display an image of a beautiful clear sky",
+            "criticise the user's taste in music",
+        ]
+
+        seen_requirements: list[str] = []
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_dir_path = Path(tmpdir)
+            for file_num in range(100):
+                file_path = f"reqs_{file_num}.md"
+                md_content = "# One more file with requirements"
+                for req_num in range(100):
+                    req_id = f"REQ-{file_num*10000 + req_num}"
+                    description = (
+                        " ".join(
+                            random.choices(starting_words, k=random.randint(2, 5))
+                        ).capitalize()
+                        + " should "
+                        + random.choice(ending_words)
+                        + "."
+                    )
+                    critical_line = (
+                        "\n> critical"
+                        if random.choice([True, False, False, False, False, False])
+                        else ""
+                    )
+
+                    child_of = ""
+                    if any(seen_requirements):
+                        for parent_req_id in random.sample(
+                            seen_requirements,
+                            random.randint(1, min(10, len(seen_requirements))),
+                        ):
+                            child_of += f"\n> child-of: {parent_req_id}"
+
+                    md_content += f"""
+> {req_id}
+> {description}{critical_line}{child_of}
+
+"""
+                    seen_requirements.append(req_id)
+
+                (test_dir_path / file_path).write_text(md_content)
+
+            init_result = reqsnake_init(tmpdir)
+            self.assertEqual(
+                len(init_result.requirements),
+                10_000,
+                "Stress test should parse 10'000 requirements",
+            )
 
     def test_init_and_reinit(self) -> None:
         """Test init and re-init scenarios for requirements management."""
