@@ -10,15 +10,51 @@ Citing [Wikipedia](https://en.wikipedia.org/wiki/Requirements_management):
 
 > In engineering, a requirement is a condition that must be satisfied for the output of a work effort to be acceptable. It is an explicit, objective, clear and often quantitative description of a condition to be satisfied by a material, design, product, or service.
 
-Proper specification of requirements is a critical field in Systems Engineering, especially when coordinating large interdisciplinary projects.
+Proper specification of requirements is a critical field in Systems Engineering, especially when coordinating interdisciplinary projects.
 
-## 🤔 Why a script to track them?
+### 🤔 Why track requirements?
 
-We, programmers, like to be smart about the tools we use. We dislike huge, GUI-based programs, hogging our CPU or bloating our experience with dozens of popups. "We like to keep things simple", we say to ourselves.
+Requirements define what you should deliver as a result of your project. They are usually broken down into smaller sub-requirements, which are tackled by teams/engineers and delivered separately. Requirements management tools help you manage the process of breaking down requirements and trace how the completion of sub-requirements results in completion of high-level project goals.
 
-Well, you can't solve documentation only using a bunch of Markdown documents! You need a bit more than that.
+## ✍️ Requirements Syntax in ReqSnake
 
-And don't get me wrong, there's a ton of amazing Markdown tooling around there:
+Suppose you have existing project documentation in Markdown, but it's a loose set of notes, or something like a MkDocs website.
+Open up your docs and start defining requirements as Markdown blockquotes. Example:
+
+```
+> REQ-1
+> The system shall support user authentication.
+> critical
+
+> REQ-2
+> The system shall store user credentials securely.
+> child-of: REQ-0
+> completed
+```
+
+That's all you have to do to start working with ReqSnake! Simply extend your existing Markdown documentation with requirements definition and start tracing what you're building.
+
+## ⚡ Installation & quick-start guide
+
+```bash
+wget https://raw.githubusercontent.com/Wint3rmute/ReqSnake/refs/heads/main/reqsnake.py
+chmod +x reqsnake.py
+./reqsnake.py init
+```
+
+The commands above will:
+
+1. Download ReqSnake
+    - There are no dependencies, just a Python installation in your system
+2. Make the script executable
+3. Initialize ReqSnake. This will:
+    - Scan Markdown files in your working directory
+    - Read all defined requirements
+    - Save them into `reqsnake.lock`
+
+## 💎 Value Proposition
+
+Between small, one-person projects and huge corporate enterprise-grade software, there's a large niche of medium-sized projects. They may be done by a sigle team or by a small/medium company. Across such projects, Markdown is a widely used tool, mostly for documentation. There's a ton of amazing Markdown tooling around:
 
 - 📚 MkDocs
 - 🗒️ Joplin
@@ -26,11 +62,11 @@ And don't get me wrong, there's a ton of amazing Markdown tooling around there:
 - 🦄 Zola
 - ✨ You name it!
 
-However, in my engineering niche, I found a piece missing - ability to manage system requirements within my Markdown documentation.
+However, I found a piece missing - ability to manage project requirements within my Markdown documentation!
 
-## 🏢 What exists already?
+### 🏢 What software exists currently?
 
-Huge, proprietary programs like:
+Huge, expensive, proprietary programs like:
 
 - [IBM DOORS](https://www.ibm.com/docs/en/engineering-lifecycle-management-suite/doors/9.7.0?topic=overview-doors)
 - [Enterprise architect](https://sparxsystems.com/)
@@ -38,37 +74,27 @@ Huge, proprietary programs like:
 
 ### 🐍 How is `ReqSnake` better?
 
-- It is a simple Python CLI
+- It's free and open-source
+- Core functionality is provided by a simple CLI application
     - No dependencies
     - No strings attached
-- It lets you manage dependencies/ via Markdown
-    - **Simple blockquote-based syntax for defining requirements, no need to butcher your existing documents**
-- It is smart about change tracking
-    - ...yeah we just commit a lockfile to `git`
-    - `reqsnake.lock` file is used for change detection
-    - It can warn you about deleting important dependencies
-- Want extra functionality? Extend ReqSnake by using its Pythonic API instead of the CLI
+- It fits into your existing workflow
+    - Simple blockquote-based syntax for defining requirements
+    - No need to butcher your existing documents
+    - No need to migrate into a proprietary system
+    - You own your documentation
 
-## ✍️ Requirements Syntax Example
+Want extra functionality? Extend ReqSnake by using its Pythonic API instead of the CLI:
 
-Requirements are defined in Markdown blockquotes, one per requirement. Supported attributes:
-
-- `critical` — marks a requirement as critical
-- `child-of` — specifies a parent relationship (no cycles allowed)
-- `completed` — marks a requirement as completed
-
-Example:
-
+```python
+# TODO: example here
 ```
-> REQ-1
-> The system shall support user authentication.
-> critical
-> child-of: REQ-0
-> completed
 
-> REQ-2
-> The system shall store user credentials securely.
-```
+## 📖 Examples
+
+ReqSnake's requirements are managed by ReqSnake! See the [requirements directory](./requirements/).
+
+ReqSnake's dependency status, generated by ReqSnake: [requirements-status.md](./requirements-status.md).
 
 ## 🚀 Features
 
@@ -80,16 +106,6 @@ Example:
     - `reqsnake.py init` — scan Markdown files and generate `reqsnake.lock`.
     - `reqsnake.py check` — compare the lockfile to Markdown requirements. Shows which file each changed requirement comes from.
     - `reqsnake.py lock` — update the lockfile. Idempotent: only updates if needed.
-- **Validation workflow:** All changes are validated with `./check.sh` (runs tests, type checks, and linter).
-- **Google-style docstrings and modern Python:** All code is documented and type-annotated.
-
-## ⚡ Quick Start example
-
-- `reqsnake.py init` — initialize ReqSnake in the current working directory
-    - This will scan the existing directory for Markdown files and generate a `reqsnake.lock`
-- `reqsnake.py check` — will read the current `reqsnake.lock` file and check if it is up-to-date with the requirements defined in the Markdown documentation in your working directory.
-    - If there are changes, the difference between `reqsnake.lock` file and the currently defined requirements will be displayed, including the file path for each changed requirement.
-- `reqsnake.py lock` — will update the `reqsnake.lock` file to reflect the currently defined requirements in your Markdown files. If nothing has changed, the lockfile is left untouched.
 
 ## ⭐ Additional reading
 
