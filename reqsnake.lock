@@ -2,69 +2,6 @@
   "version": "1.0.0",
   "requirements": [
     {
-      "req_id": "REQ-CORE-1",
-      "description": "The tool shall parse requirements from Markdown files using blockquote syntax.",
-      "critical": true,
-      "children": [],
-      "completed": false
-    },
-    {
-      "req_id": "REQ-CORE-2",
-      "description": "Each requirement shall have a unique ID, description, and may have critical, child, and completed attributes.",
-      "critical": true,
-      "children": [],
-      "completed": false
-    },
-    {
-      "req_id": "REQ-CORE-3",
-      "description": "The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.",
-      "critical": true,
-      "children": [],
-      "completed": false
-    },
-    {
-      "req_id": "REQ-CORE-4",
-      "description": "The tool shall provide a command-line interface (CLI) for managing requirements.",
-      "critical": true,
-      "children": [],
-      "completed": false
-    },
-    {
-      "req_id": "REQ-CORE-5",
-      "description": "Child relationships shall be described with a \"child-of\" key. Example: \"child-of REQ-123\"",
-      "critical": true,
-      "children": [],
-      "completed": false
-    },
-    {
-      "req_id": "REQ-CORE-6",
-      "description": "Each requirement shall be in a form of \"<STRING>-<NUMBER>\". Where NUMBER is an integer.",
-      "critical": true,
-      "children": [],
-      "completed": false
-    },
-    {
-      "req_id": "REQ-CORE-7",
-      "description": "A requirement can only be marked as completed once all of its child requirements have been marked as completed",
-      "critical": true,
-      "children": [],
-      "completed": false
-    },
-    {
-      "req_id": "REQ-CORE-8",
-      "description": "The tool shall provide a CLI Python API for core operations.",
-      "critical": true,
-      "children": [],
-      "completed": false
-    },
-    {
-      "req_id": "REQ-CORE-9",
-      "description": "The tool shall provide tools for visualisation of the current state of requirements.",
-      "critical": true,
-      "children": [],
-      "completed": false
-    },
-    {
       "req_id": "REQ-OUTPUT-1",
       "description": "The CLI shall provide a command to generate a Markdown file containing the status of all currently defined requirements, relying solely on the reqsnake.lock file. The output shall be suitable for inclusion in documentation or reports.",
       "critical": false,
