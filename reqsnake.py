@@ -621,7 +621,7 @@ def _generate_mermaid_diagram(status_result: StatusResult) -> str:
     if not status_result.requirements:
         return ""
 
-    lines = ["```mermaid", "flowchart TD"]
+    lines = ["```mermaid", "flowchart LR"]
 
     # Create a mapping from requirement ID to requirement
     req_dict: dict[str, ParsedRequirement] = {

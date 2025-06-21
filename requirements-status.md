@@ -3,7 +3,7 @@
 ## Requirements Hierarchy
 
 ```mermaid
-flowchart TD
+flowchart LR
     REQ_CORE_1["REQ-CORE-1<br/>The tool shall parse requirements from M..."]:::critical
     REQ_CORE_2["REQ-CORE-2<br/>Each requirement shall have a unique ID,..."]:::critical
     REQ_CORE_3["REQ-CORE-3<br/>The tool shall store requirements in a r..."]:::critical
