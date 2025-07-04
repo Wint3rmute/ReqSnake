@@ -125,6 +125,7 @@ class TestMkDocsPlugin(unittest.TestCase):
 > REQ-1
 > Parent requirement.
 > critical
+> completed
 
 > REQ-2
 > Child requirement.

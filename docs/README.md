@@ -26,7 +26,3 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 > REQ-CORE-8
 > The core operations shall be independent from MkDocs' library.
 > critical
-
-> REQ-CORE-9
-> The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.
-> critical
