@@ -1,0 +1,6 @@
+site_name: Test
+theme:
+  name: material
+plugins:
+  - reqsnake
+  - search

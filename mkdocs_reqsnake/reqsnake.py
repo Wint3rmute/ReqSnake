@@ -68,13 +68,15 @@ class Requirement:
 
     def to_pretty_string(self) -> str:
         """Return a human-readable, multi-line string representation of the requirement."""
-        lines = [f"{self.req_id}: {self.description}"]
+        lines = [f"{self.req_id}: {self.description}\n\n"]
         if self.critical:
-            lines.append("  - critical")
-        if self.children:
-            lines.append(f"  - children: {', '.join(self.children)}")
+            lines.append("**⚠️ critical**\n\n")
         if self.completed:
-            lines.append("  - completed")
+            lines.append("✅ completed\n\n")
+        if self.children:
+            lines.append(f"### Children\n\n")
+            for child in self.children:
+                lines.append(f"- {child}\n")
         return "\n".join(lines)
 
 
