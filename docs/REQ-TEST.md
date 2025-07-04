@@ -5,7 +5,7 @@
 > child-of: REQ-PARSER-1
 
 > REQ-TEST-2
-> The application code provide integration tests that use the Python API to simulate CLI operations in temporary directories.
+> The application code shall provide integration tests that use the Python API to simulate MkDocs plugin operations in temporary directories.
 > child-of: REQ-CORE-1
 
 > REQ-TEST-3

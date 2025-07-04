@@ -71,3 +71,7 @@ Todo: this should be changed to raise errors instead?
 > REQ-PARSER-19
 > The parser shall raise errors on duplicated 'child-of:' lines per requirement.
 > child-of: REQ-CORE-2
+
+> REQ-PARSER-20
+> The application shall allow for specification of filesystem paths to be ignored during requirements scanning. A file `.requirementsignore` shall be used to specify the list of filesystem paths to ignore, similar to how .gitignore works.
+> child-of: REQ-CORE-1
