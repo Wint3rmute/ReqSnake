@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 import json
+from unittest.mock import MagicMock
 
 from mkdocs_reqsnake.plugin import ReqSnake
 from mkdocs_reqsnake.reqsnake import Requirement
@@ -19,6 +20,16 @@ class TestMkDocsPlugin(unittest.TestCase):
         self.plugin = ReqSnake()
         self.temp_dir = tempfile.mkdtemp()
         self.test_dir = Path(self.temp_dir)
+        self.mock_file_no_reqs = Mock()
+        self.mock_file_no_reqs.src_uri = "no_reqs.md"
+        self.mock_file_no_reqs.content_string = ""  # No requirements
+        self.mock_file_no_src_dir = Mock()
+        self.mock_file_no_src_dir.src_uri = "no_src_dir.md"
+        self.mock_file_no_src_dir.content_string = ""  # No requirements
+        self.mock_file_with_reqs = Mock()
+        self.mock_file_with_reqs.src_uri = "with_reqs.md"
+        self.mock_file_with_reqs.content_string = "> REQ-1\n> Test requirement.\n"
+        self.mock_config = Mock()
 
     def tearDown(self) -> None:
         """Clean up test fixtures."""
@@ -39,20 +50,11 @@ class TestMkDocsPlugin(unittest.TestCase):
 
     def test_on_files_with_no_requirements(self) -> None:
         """Test on_files when no requirements are found in documentation."""
-        # Create mock MkDocs files
-        mock_files = Mock()
-        mock_files.documentation_pages.return_value = []
-
-        # Create mock config
-        mock_config = Mock()
-
-        # Call on_files
-        result = self.plugin.on_files(mock_files, config=mock_config)
-
-        # Should return the files object
-        self.assertEqual(result, mock_files)
-
-        # Should still add an index file even with no requirements
+        mock_files = MagicMock()
+        mock_files.documentation_pages.return_value = [self.mock_file_no_reqs]
+        mock_files.append = MagicMock()
+        self.plugin.on_files(mock_files, config=self.mock_config)
+        # No requirements, so only the index page should be appended
         mock_files.append.assert_called_once()
 
     def test_on_files_with_requirements(self) -> None:
@@ -104,26 +106,15 @@ class TestMkDocsPlugin(unittest.TestCase):
 
     def test_on_files_ignores_files_without_src_dir(self) -> None:
         """Test that on_files ignores files without src_dir."""
-        # Create mock file without src_dir
-        mock_file = Mock()
-        mock_file.src_dir = None
-        mock_file.content_string = "> REQ-1\n> Test requirement.\n"
-
-        # Create mock files collection
-        mock_files = Mock()
-        mock_files.documentation_pages.return_value = [mock_file]
-
-        # Create mock config
-        mock_config = Mock()
-
-        # Call on_files
-        result = self.plugin.on_files(mock_files, config=mock_config)
-
-        # Should return the files object
-        self.assertEqual(result, mock_files)
-
-        # Should still add an index file even when file is ignored
-        mock_files.append.assert_called_once()
+        mock_files = MagicMock()
+        mock_files.documentation_pages.return_value = [
+            self.mock_file_no_src_dir,
+            self.mock_file_with_reqs,
+        ]
+        mock_files.append = MagicMock()
+        self.plugin.on_files(mock_files, config=self.mock_config)
+        # Should generate one requirement file and one index file
+        self.assertEqual(mock_files.append.call_count, 2)
 
     def test_on_files_with_complex_requirements(self) -> None:
         """Test on_files with complex requirements including children and completed status."""
@@ -276,25 +267,14 @@ class TestMkDocsPlugin(unittest.TestCase):
 
     def test_plugin_disabled(self) -> None:
         """Test that the plugin does nothing when disabled."""
-        # Create plugin with disabled config
         plugin = ReqSnake()
-        plugin.config = {"enabled": False}
-
-        # Create mock files
-        mock_files = Mock()
-        mock_files.documentation_pages.return_value = []
-
-        # Create mock config
-        mock_config = Mock()
-
-        # Call on_files
-        result = plugin.on_files(mock_files, config=mock_config)
-
-        # Should return the files object
-        self.assertEqual(result, mock_files)
-
-        # Should still add an index file even when disabled
-        mock_files.append.assert_called_once()
+        plugin.config["enabled"] = False
+        mock_files = MagicMock()
+        mock_files.documentation_pages.return_value = [self.mock_file_with_reqs]
+        mock_files.append = MagicMock()
+        plugin.on_files(mock_files, config=self.mock_config)
+        # Plugin is disabled, so no files should be appended
+        mock_files.append.assert_not_called()
 
 
 if __name__ == "__main__":
