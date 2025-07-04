@@ -3,9 +3,8 @@
 This directory stores the requirements of ReqSnake. I figured that I should track the requirements of ReqSnake with ReqSnake, using anything else would make me look like a hypocrite!
 
 - This file - core requirements
-- [REQ-CLI.md](./REQ-CLI.md) - CLI interface requirements
 - [REQ-PARSER.md](./REQ-PARSER.md) - Markdown parser requirements
-- [REQ-OUTPUT.md](./REQ-OUTPUT.md) - Output formats requirements
+- [REQ-OUTPUT.md](./REQ-OUTPUT.md) - Output generation and MkDocs plugin requirements
 - [REQ-TEST.md](./REQ-TEST.md) - Requirements regarding testing of ReqSnake
 
 ## ReqSnake - core requirements
@@ -13,7 +12,7 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 (first 2 core requirements are defined in [README.md](../README.md)).
 
 > REQ-CORE-4
-> The tool shall provide a command-line interface (CLI) for managing requirements.
+> The tool shall provide a MkDocs plugin interface for managing requirements.
 > critical
 
 > REQ-CORE-5
@@ -25,7 +24,7 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 > critical
 
 > REQ-CORE-8
-> The tool shall provide a CLI Python API for core operations.
+> The core operations shall be independent from MkDocs' library.
 > critical
 
 > REQ-CORE-9
