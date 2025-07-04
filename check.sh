@@ -2,6 +2,8 @@
 
 set -e
 
+source .venv/bin/activate
+
 # Format code
 
 black .
