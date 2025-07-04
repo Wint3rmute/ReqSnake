@@ -1,4 +1,5 @@
-from typing import override
+"""MkDocs plugin for ReqSnake requirements management integration."""
+
 from mkdocs.plugins import BasePlugin
 from mkdocs.config import config_options
 
@@ -14,11 +15,13 @@ from mkdocs_reqsnake.reqsnake import Requirement, _parse_requirements_from_markd
 logger = get_plugin_logger(__name__)
 
 
-class ReqSnake(BasePlugin):
+class ReqSnake(BasePlugin):  # type: ignore
+    """MkDocs plugin for generating requirements pages from Markdown files."""
+
     config_scheme = (("enabled", config_options.Type(bool, default=True)),)
 
-    @override
     def on_files(self, files: Files, /, *, config: MkDocsConfig) -> Files | None:
+        """Generate requirements pages and index for MkDocs site from Markdown requirements."""
         requirements: list[Requirement] = []
 
         for file in files.documentation_pages():
@@ -50,3 +53,4 @@ class ReqSnake(BasePlugin):
                 inclusion=InclusionLevel.INCLUDED,
             )
         )
+        return files

@@ -1,3 +1,5 @@
+"""Setup script for ReqSnake MkDocs plugin."""
+
 from setuptools import setup
 
 setup(
@@ -7,9 +9,6 @@ setup(
     install_requires=["mkdocs>=1.6", "mkdocs-material>=9.6"],
     entry_points={"mkdocs.plugins": ["reqsnake = mkdocs_reqsnake.plugin:ReqSnake"]},
     extras_require={
-        "dev": [
-            "mypy",
-            "ruff",
-        ],
+        "dev": ["mypy", "ruff", "types-setuptools"],
     },
 )

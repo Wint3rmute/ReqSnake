@@ -3,6 +3,7 @@
 
 This module provides both a CLI and a Python API for managing requirements defined in Markdown files.
 """
+
 import re
 from typing import Optional, Any, Set, Tuple, Dict
 from dataclasses import dataclass, field, asdict
@@ -376,7 +377,9 @@ def _print_status_by_file(status_result: StatusResult) -> None:
         status_emoji = (
             "✅"
             if completed_count == total_count
-            else "🔄" if completed_count > 0 else "⏳"
+            else "🔄"
+            if completed_count > 0
+            else "⏳"
         )
         print(
             f"  {status_emoji} {file_path} ({completed_count}/{total_count} completed, {completion_percentage:.1f}%)"
@@ -768,7 +771,7 @@ def _generate_graphviz(lockfile_path: Path, output_path: Path) -> None:
             attrs.append("style=filled fillcolor=lightgreen")
         attr_str = (",".join(attrs)) if attrs else ""
         lines.append(
-            f'    "{req.req_id}" [label="{node_label} \n {description_sanitized} "{(", "+attr_str) if attr_str else ""}];'
+            f'    "{req.req_id}" [label="{node_label} \n {description_sanitized} "{(", " + attr_str) if attr_str else ""}];'
         )
     # Add edges
     for req in requirements:

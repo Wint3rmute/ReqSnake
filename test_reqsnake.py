@@ -6,7 +6,7 @@ import os
 import shutil
 import json
 import random
-from reqsnake import (
+from mkdocs_reqsnake.reqsnake import (
     Requirement,
     _parse_requirements_from_markdown,
     reqsnake_init,
@@ -19,7 +19,7 @@ from reqsnake import (
 from pathlib import Path
 import subprocess
 import sys
-import reqsnake
+import mkdocs_reqsnake.reqsnake as reqsnake
 from typing import Any
 
 
@@ -254,7 +254,7 @@ class TestRequirePyScenarios(unittest.TestCase):
                 file_path = f"reqs_{file_num}.md"
                 md_content = "# One more file with requirements"
                 for req_num in range(100):
-                    req_id = f"REQ-{file_num*10000 + req_num}"
+                    req_id = f"REQ-{file_num * 10000 + req_num}"
                     description = (
                         " ".join(
                             random.choices(starting_words, k=random.randint(2, 5))
@@ -424,7 +424,7 @@ class TestRequirePyScenarios(unittest.TestCase):
 
     def test_cli_check_outputs_file_path(self) -> None:
         """Test that the CLI check output includes the file path for changed requirements."""
-        reqsnake_py = str(Path(__file__).parent / "reqsnake.py")
+        reqsnake_py = str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py")
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
             md_path = test_dir_path / "reqs.md"
@@ -502,13 +502,13 @@ class TestRequirementPrettyString(unittest.TestCase):
         cases = [
             (
                 Requirement(req_id="REQ-1", description="A minimal requirement."),
-                "REQ-1: A minimal requirement.",
+                "REQ-1: A minimal requirement.\n\n",
             ),
             (
                 Requirement(
                     req_id="REQ-2", description="A critical requirement.", critical=True
                 ),
-                "REQ-2: A critical requirement.\n  - critical",
+                "REQ-2: A critical requirement.\n\n\n**⚠️ critical**\n\n",
             ),
             (
                 Requirement(
@@ -516,13 +516,13 @@ class TestRequirementPrettyString(unittest.TestCase):
                     description="Has children.",
                     children=["REQ-1", "REQ-2"],
                 ),
-                "REQ-3: Has children.\n  - children: REQ-1, REQ-2",
+                "REQ-3: Has children.\n\n\n### Children\n\n\n- REQ-1\n\n- REQ-2\n",
             ),
             (
                 Requirement(
                     req_id="REQ-4", description="Completed requirement.", completed=True
                 ),
-                "REQ-4: Completed requirement.\n  - completed",
+                "REQ-4: Completed requirement.\n\n\n✅ completed\n\n",
             ),
             (
                 Requirement(
@@ -532,7 +532,7 @@ class TestRequirementPrettyString(unittest.TestCase):
                     children=["REQ-1", "REQ-2"],
                     completed=True,
                 ),
-                "REQ-5: All fields set.\n  - critical\n  - children: REQ-1, REQ-2\n  - completed",
+                "REQ-5: All fields set.\n\n\n**⚠️ critical**\n\n\n✅ completed\n\n\n### Children\n\n\n- REQ-1\n\n- REQ-2\n",
             ),
         ]
         for req, expected in cases:
@@ -769,7 +769,7 @@ class TestStatusCommand(unittest.TestCase):
 
     def test_cli_status_output(self) -> None:
         """Test that the CLI status command produces expected output."""
-        reqsnake_py = str(Path(__file__).parent / "reqsnake.py")
+        reqsnake_py = str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py")
 
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
@@ -816,7 +816,7 @@ class TestStatusCommand(unittest.TestCase):
 
     def test_cli_status_no_lockfile(self) -> None:
         """Test that CLI status command handles missing lockfile gracefully."""
-        reqsnake_py = str(Path(__file__).parent / "reqsnake.py")
+        reqsnake_py = str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py")
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Run status without init
@@ -852,7 +852,7 @@ class TestStatusCommand(unittest.TestCase):
 
     def test_cli_status_md_output(self) -> None:
         """Test that the CLI status-md command produces a Markdown file with correct content."""
-        reqsnake_py = str(Path(__file__).parent / "reqsnake.py")
+        reqsnake_py = str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py")
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
             md_content = """
@@ -925,7 +925,11 @@ class TestStatusCommand(unittest.TestCase):
             reqs_md.write_text(md_content)
             # Generate lockfile
             subprocess.run(
-                [sys.executable, str(Path(__file__).parent / "reqsnake.py"), "init"],
+                [
+                    sys.executable,
+                    str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py"),
+                    "init",
+                ],
                 cwd=tmpdir,
                 check=True,
             )
@@ -934,7 +938,7 @@ class TestStatusCommand(unittest.TestCase):
             subprocess.run(
                 [
                     sys.executable,
-                    str(Path(__file__).parent / "reqsnake.py"),
+                    str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py"),
                     "visual-dot",
                     "-o",
                     str(dot_file),
@@ -1011,7 +1015,7 @@ class TestStatusMDRelativePaths(unittest.TestCase):
 
     def test_status_md_relative_paths(self) -> None:
         """REQ-OUTPUT-2: The generated Markdown status file contains relative file paths."""
-        reqsnake_py = str(Path(__file__).parent / "reqsnake.py")
+        reqsnake_py = str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py")
         with tempfile.TemporaryDirectory() as tmpdir:
             test_dir_path = Path(tmpdir)
             md1 = test_dir_path / "foo.md"
