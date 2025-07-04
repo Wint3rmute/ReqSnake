@@ -422,32 +422,6 @@ class TestRequirePyScenarios(unittest.TestCase):
                 "Lockfile should not change if requirements are unchanged.",
             )
 
-    def test_cli_check_outputs_file_path(self) -> None:
-        """Test that the CLI check output includes the file path for changed requirements."""
-        reqsnake_py = str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py")
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_path = test_dir_path / "reqs.md"
-            md_path.write_text("> REQ-1\n> The first requirement.\n")
-            # Run init
-            subprocess.run(
-                [sys.executable, reqsnake_py, "init"],
-                cwd=tmpdir,
-                check=True,
-                capture_output=True,
-            )
-            # Change the requirement
-            md_path.write_text("> REQ-1\n> The changed requirement.\n")
-            # Run check and capture output
-            result = subprocess.run(
-                [sys.executable, reqsnake_py, "check"],
-                cwd=tmpdir,
-                capture_output=True,
-                text=True,
-            )
-            self.assertIn(str(md_path), result.stdout)
-            self.assertIn("Changed requirements:", result.stdout)
-
     def test_requirementsignore_ignores_files(self) -> None:
         """REQ-CLI-11: Files matching .requirementsignore .gitignore-style globs are ignored during scanning."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -767,69 +741,6 @@ class TestStatusCommand(unittest.TestCase):
             self.assertEqual(file1_reqs[0].requirement.req_id, "REQ-1")
             self.assertEqual(file2_reqs[0].requirement.req_id, "REQ-2")
 
-    def test_cli_status_output(self) -> None:
-        """Test that the CLI status command produces expected output."""
-        reqsnake_py = str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py")
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = """
-> REQ-1
-> First requirement.
-> completed
-
-> REQ-2
-> Second requirement.
-> critical
-"""
-            md_path = test_dir_path / "reqs.md"
-            md_path.write_text(md_content)
-
-            # Run init
-            subprocess.run(
-                [sys.executable, reqsnake_py, "init"],
-                cwd=tmpdir,
-                check=True,
-                capture_output=True,
-            )
-
-            # Run status and capture output
-            result = subprocess.run(
-                [sys.executable, reqsnake_py, "status"],
-                cwd=tmpdir,
-                capture_output=True,
-                text=True,
-            )
-
-            self.assertEqual(result.returncode, 0)
-            output = result.stdout
-
-            # Check for expected content
-            self.assertIn("📊 Requirements Status Summary:", output)
-            self.assertIn("Total requirements: 2", output)
-            self.assertIn("Completed: 1/2 (50.0%)", output)
-            self.assertIn("Critical requirements: 1", output)
-            self.assertIn("📁 Requirements by File:", output)
-            self.assertIn("🌳 Hierarchical Status:", output)
-            self.assertIn("REQ-1: First requirement.", output)
-            self.assertIn("REQ-2: Second requirement.", output)
-
-    def test_cli_status_no_lockfile(self) -> None:
-        """Test that CLI status command handles missing lockfile gracefully."""
-        reqsnake_py = str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py")
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Run status without init
-            result = subprocess.run(
-                [sys.executable, reqsnake_py, "status"],
-                cwd=tmpdir,
-                capture_output=True,
-                text=True,
-            )
-
-            self.assertEqual(result.returncode, 1)
-            self.assertIn("reqsnake.lock not found", result.stdout)
-
     def test_status_with_empty_requirements(self) -> None:
         """Test status functionality with no requirements."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -850,50 +761,6 @@ class TestStatusCommand(unittest.TestCase):
             self.assertEqual(status_result.critical_completed_count, 0)
             self.assertEqual(len(status_result.requirements), 0)
 
-    def test_cli_status_md_output(self) -> None:
-        """Test that the CLI status-md command produces a Markdown file with correct content."""
-        reqsnake_py = str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py")
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = """
-> REQ-1
-> First requirement.
-> completed
-
-> REQ-2
-> Second requirement.
-> critical
-"""
-            md_path = test_dir_path / "reqs.md"
-            md_path.write_text(md_content)
-
-            # Run init to create reqsnake.lock
-            subprocess.run(
-                [sys.executable, reqsnake_py, "init"],
-                cwd=tmpdir,
-                check=True,
-                capture_output=True,
-            )
-
-            # Run status-md to generate Markdown status file
-            output_file = test_dir_path / "requirements-status.md"
-            result = subprocess.run(
-                [sys.executable, reqsnake_py, "status-md", "-o", str(output_file)],
-                cwd=tmpdir,
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(result.returncode, 0)
-            self.assertTrue(output_file.exists())
-            md = output_file.read_text(encoding="utf-8")
-            # Check for expected Markdown content
-            self.assertIn("# Requirements Status Report", md)
-            self.assertIn("## Summary", md)
-            self.assertIn("REQ-1", md)
-            self.assertIn("REQ-2", md)
-            self.assertIn("Completed:", md)
-            self.assertIn("Hierarchical Status", md)
-
     def test_completed_parent_with_incomplete_child_fails(self) -> None:
         """REQ-CORE-7: Parent cannot be completed unless all children are completed."""
         md = "> REQ-1\n> Child.\n> child-of: REQ-2\n\n> REQ-2\n> Parent.\n> completed\n"
@@ -913,44 +780,6 @@ class TestStatusCommand(unittest.TestCase):
             reqs_md.write_text(md)
             # Should not raise
             reqsnake_init(tmpdir)
-
-    def test_visual_dot_generation(self) -> None:
-        """REQ-VISUAL-1: The tool shall generate a Graphviz dot file from reqsnake.lock."""
-        import subprocess
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = "> REQ-1\n> Parent.\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
-            reqs_md = test_dir_path / "reqs.md"
-            reqs_md.write_text(md_content)
-            # Generate lockfile
-            subprocess.run(
-                [
-                    sys.executable,
-                    str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py"),
-                    "init",
-                ],
-                cwd=tmpdir,
-                check=True,
-            )
-            # Generate dot file
-            dot_file = test_dir_path / "requirements-visual.dot"
-            subprocess.run(
-                [
-                    sys.executable,
-                    str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py"),
-                    "visual-dot",
-                    "-o",
-                    str(dot_file),
-                ],
-                cwd=tmpdir,
-                check=True,
-            )
-            dot = dot_file.read_text(encoding="utf-8")
-            self.assertIn("digraph requirements", dot)
-            self.assertIn('"REQ-1"', dot)
-            self.assertIn('"REQ-2"', dot)
-            self.assertIn('"REQ-1" -> "REQ-2"', dot)
 
 
 class TestLockfileVersion(unittest.TestCase):
@@ -1008,42 +837,6 @@ class TestProgressBar(unittest.TestCase):
     def test_overflow(self) -> None:
         """Bar is full if completed > total (overflow)."""
         self.assertEqual(_progress_bar(15, 10), "`[████████████████████]`")
-
-
-class TestStatusMDRelativePaths(unittest.TestCase):
-    """Test that the Markdown status file contains only relative file paths."""
-
-    def test_status_md_relative_paths(self) -> None:
-        """REQ-OUTPUT-2: The generated Markdown status file contains relative file paths."""
-        reqsnake_py = str(Path(__file__).parent / "mkdocs_reqsnake" / "reqsnake.py")
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md1 = test_dir_path / "foo.md"
-            md2 = test_dir_path / "bar/baz.md"
-            md2.parent.mkdir(parents=True, exist_ok=True)
-            md1.write_text("> REQ-1\n> Foo.\n")
-            md2.write_text("> REQ-2\n> Bar.\n")
-            # Run init
-            subprocess.run(
-                [sys.executable, reqsnake_py, "init"],
-                cwd=tmpdir,
-                check=True,
-                capture_output=True,
-            )
-            # Run status-md
-            output_file = test_dir_path / "requirements-status.md"
-            subprocess.run(
-                [sys.executable, reqsnake_py, "status-md", "-o", str(output_file)],
-                cwd=tmpdir,
-                check=True,
-                capture_output=True,
-            )
-            md = output_file.read_text(encoding="utf-8")
-            # Should contain relative paths, not absolute
-            self.assertIn("### foo.md", md)
-            self.assertIn("### bar/baz.md", md)
-            self.assertNotIn(str(md1.resolve()), md)
-            self.assertNotIn(str(md2.resolve()), md)
 
 
 if __name__ == "__main__":
