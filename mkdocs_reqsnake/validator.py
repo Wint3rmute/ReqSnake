@@ -69,7 +69,19 @@ def validate_no_cycles(requirements: List[Requirement]) -> None:
         CircularDependencyError: If a circular dependency is detected.
 
     """
-    adj: Dict[str, List[str]] = {req.req_id: req.children for req in requirements}
+    # Build adjacency list: parent_id -> [child_id1, child_id2, ...]
+    # This represents the dependency tree structure
+    adj: Dict[str, List[str]] = {}
+    for req in requirements:
+        # Initialize empty list for each requirement
+        if req.req_id not in adj:
+            adj[req.req_id] = []
+        # Add this requirement as a child of each of its parents
+        for parent_id in req.parents:
+            if parent_id not in adj:
+                adj[parent_id] = []
+            adj[parent_id].append(req.req_id)
+
     visiting: Set[str] = set()  # For the current traversal path
     visited: Set[str] = set()  # For all nodes ever visited
 
@@ -106,11 +118,25 @@ def validate_completed_children(requirements: List[Requirement]) -> None:
 
     """
     req_dict = {r.req_id: r for r in requirements}
+
+    # Build parent -> children mapping
+    children_map: Dict[str, List[str]] = {}
+    for req in requirements:
+        # Initialize empty list for each requirement
+        if req.req_id not in children_map:
+            children_map[req.req_id] = []
+        # Add this requirement as a child of each of its parents
+        for parent_id in req.parents:
+            if parent_id not in children_map:
+                children_map[parent_id] = []
+            children_map[parent_id].append(req.req_id)
+
     errors: List[tuple[str, str]] = []
 
     for req in requirements:
         if req.completed:
-            for child_id in req.children:
+            # Check if all children of this requirement are completed
+            for child_id in children_map.get(req.req_id, []):
                 child = req_dict.get(child_id)
                 if child is not None and not child.completed:
                     errors.append((req.req_id, child_id))

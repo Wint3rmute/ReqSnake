@@ -52,7 +52,9 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
             # Generate individual requirement pages
             for parsed_req in parsed_requirements:
                 req = parsed_req.requirement
-                content = generate_requirement_page_content(parsed_req)
+                content = generate_requirement_page_content(
+                    parsed_req, parsed_requirements
+                )
 
                 files.append(
                     File.generated(

@@ -118,6 +118,7 @@ mkdocs serve
 ```
 
 ReqSnake will automatically:
+
 - Extract all requirements from your documentation
 - Generate individual pages for each requirement
 - Create a requirements index page

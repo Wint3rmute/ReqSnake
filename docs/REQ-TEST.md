@@ -1,3 +1,5 @@
+# Testing
+
 > REQ-TEST-1
 > The parser shall provide unit tests for the Markdown parser.
 > critical
@@ -10,7 +12,7 @@
 
 > REQ-TEST-4
 > Integration tests shall verify that duplicate requirement IDs raise an error.
-> child-of: REQ-CORE-1
+> child-of: REQ-TEST-3
 
 > REQ-TEST-5
 > The application shall provide unit tests for the MkDocs plugin that simulate the plugin lifecycle.
@@ -26,4 +28,4 @@
 
 > REQ-TEST-8
 > Plugin tests shall verify that the plugin respects the enabled/disabled configuration.
-> child-of: REQ-CORE-4 
+> child-of: REQ-CORE-4

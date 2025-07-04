@@ -82,16 +82,16 @@ def _parse_single_requirement_block(block: str) -> Requirement | None:
     description = lines[1]
     critical = False
     completed = False
-    children: List[str] = []
-    seen_children: Set[str] = set()
+    parents: List[str] = []
+    seen_parents: Set[str] = set()
 
     # Process attributes
     for line in lines[2:]:
         critical, completed = _process_attribute_line(
-            line, req_id, seen_children, children, critical, completed
+            line, req_id, seen_parents, parents, critical, completed
         )
 
-    return Requirement(req_id, description, critical, children, completed)
+    return Requirement(req_id, description, critical, parents, completed)
 
 
 def _validate_requirement_id(req_id: str) -> None:
@@ -119,8 +119,8 @@ def _validate_requirement_id(req_id: str) -> None:
 def _process_attribute_line(
     line: str,
     req_id: str,
-    seen_children: Set[str],
-    children: List[str],
+    seen_parents: Set[str],
+    parents: List[str],
     critical: bool,
     completed: bool,
 ) -> Tuple[bool, bool]:
@@ -129,8 +129,8 @@ def _process_attribute_line(
     Args:
         line: The attribute line to process.
         req_id: The requirement ID for error messages.
-        seen_children: Set of already seen child IDs.
-        children: List to append child IDs to.
+        seen_parents: Set of already seen parent IDs.
+        parents: List to append parent IDs to.
         critical: Current critical flag.
         completed: Current completed flag.
 
@@ -148,7 +148,7 @@ def _process_attribute_line(
     elif norm == "completed":
         return critical, True
     elif norm.startswith("child-of"):
-        _process_child_of_line(line, req_id, seen_children, children)
+        _process_child_of_line(line, req_id, seen_parents, parents)
         return critical, completed
     else:
         # NOTE: REQ-PARSER-10 says to raise errors on unknown attributes,
@@ -158,15 +158,15 @@ def _process_attribute_line(
 
 
 def _process_child_of_line(
-    line: str, req_id: str, seen_children: Set[str], children: List[str]
+    line: str, req_id: str, seen_parents: Set[str], parents: List[str]
 ) -> None:
     """Process a child-of attribute line.
 
     Args:
         line: The child-of line to process.
         req_id: The requirement ID for error messages.
-        seen_children: Set of already seen child IDs.
-        children: List to append child ID to.
+        seen_parents: Set of already seen parent IDs.
+        parents: List to append parent ID to.
 
     Raises:
         ParseError: If duplicate child-of line is found.
@@ -176,15 +176,15 @@ def _process_child_of_line(
     if after.startswith(":"):
         after = after[1:].lstrip()
 
-    child_id = after.strip()
-    if child_id:
-        norm_child_id = child_id.upper()
-        if norm_child_id in seen_children:
+    parent_id = after.strip()
+    if parent_id:
+        norm_parent_id = parent_id.upper()
+        if norm_parent_id in seen_parents:
             raise ParseError(
-                f"Duplicate child ID '{child_id}' in requirement '{req_id}' (case-insensitive, whitespace-insensitive)"
+                f"Duplicate parent ID '{parent_id}' in requirement '{req_id}' (case-insensitive, whitespace-insensitive)"
             )
-        seen_children.add(norm_child_id)
-        children.append(child_id)
+        seen_parents.add(norm_parent_id)
+        parents.append(parent_id)
 
 
 def parse_requirements_from_files(

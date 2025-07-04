@@ -33,7 +33,7 @@ class TestRequirementParser(unittest.TestCase):
                 req_id="MECH-123",
                 description="The wing must withstand 5g load.",
                 critical=True,
-                children=["MECH-54", "MECH-57"],
+                parents=["MECH-54", "MECH-57"],
             ),
         )
 
@@ -59,7 +59,7 @@ class TestRequirementParser(unittest.TestCase):
                 req_id="MECH-123",
                 description="The wing must withstand 5g load.",
                 critical=True,
-                children=["MECH-54"],
+                parents=["MECH-54"],
             ),
         )
         self.assertEqual(
@@ -68,7 +68,7 @@ class TestRequirementParser(unittest.TestCase):
                 req_id="AVIO-15",
                 description="Avionics must support dual redundancy.",
                 critical=False,
-                children=["AVIO-16"],
+                parents=["AVIO-16"],
             ),
         )
 
@@ -86,7 +86,7 @@ class TestRequirementParser(unittest.TestCase):
                 req_id="SW-33",
                 description="On-board software for the plane.",
                 critical=False,
-                children=[],
+                parents=[],
             ),
         )
 
@@ -129,7 +129,7 @@ Some text.
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
-            set(reqs[0].children),
+            set(reqs[0].parents),
             {"REQ-2", "REQ-3", "req-5", "REQ-6"},
         )
 
@@ -155,7 +155,7 @@ Moar text!
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
-            set(reqs[0].children),
+            set(reqs[0].parents),
             {"REQ-2", "REQ-3", "REQ-4"},
         )
 
@@ -165,24 +165,24 @@ Moar text!
         md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n> child-of: REQ-2\n"
         with self.assertRaises(ValueError) as ctx:
             parse_requirements_from_markdown(md)
-        self.assertIn("Duplicate child ID", str(ctx.exception))
+        self.assertIn("Duplicate parent ID", str(ctx.exception))
         # Duplicate across 'child-of' forms (case-insensitive)
         md2 = "> REQ-1\n> Parent.\n> child-of REQ-2\n> child-of: req-2\n"
         with self.assertRaises(ValueError) as ctx:
             parse_requirements_from_markdown(md2)
-        self.assertIn("Duplicate child ID", str(ctx.exception))
+        self.assertIn("Duplicate parent ID", str(ctx.exception))
         # Duplicate with whitespace differences
         md3 = "> REQ-1\n> Parent.\n> child-of:   REQ-2   \n> child-of: REQ-2\n"
         with self.assertRaises(ValueError) as ctx:
             parse_requirements_from_markdown(md3)
-        self.assertIn("Duplicate child ID", str(ctx.exception))
+        self.assertIn("Duplicate parent ID", str(ctx.exception))
 
     def test_multiple_child_lines_and_duplicates(self) -> None:
         """REQ-PARSER-9/99: Multiple 'child-of' lines are allowed, but duplicates must raise an error."""
         md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-2\n> child-of: REQ-3"
         with self.assertRaises(ValueError) as ctx:
             parse_requirements_from_markdown(md)
-        self.assertIn("Duplicate child ID 'REQ-2'", str(ctx.exception))
+        self.assertIn("Duplicate parent ID 'REQ-2'", str(ctx.exception))
 
     def test_requirement_id_format_enforced(self) -> None:
         """REQ-CORE-6: IDs must be in the form <STRING>-<NUMBER>."""
@@ -241,7 +241,7 @@ Moar text!
 
     def test_completed_parent_with_incomplete_child_fails(self) -> None:
         """REQ-CORE-7: Completed requirements with incomplete children should raise ValueError."""
-        md = "> REQ-1\n> Parent.\n> completed\n> child-of: REQ-2\n\n> REQ-2\n> Child.\n"
+        md = "> REQ-1\n> Parent.\n> completed\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
         file_data = [("test.md", md)]
         parsed_reqs = parse_requirements_from_files(file_data)
         with self.assertRaises(ValueError) as ctx:
@@ -280,8 +280,8 @@ class TestRequirementPrettyString(unittest.TestCase):
         self.assertEqual(req.to_pretty_string(), expected)
 
         # Requirement with children
-        req = Requirement("REQ-4", "Parent requirement", children=["REQ-5", "REQ-6"])
-        expected = "REQ-4: Parent requirement\n\n### Children\n\n- REQ-5\n- REQ-6\n"
+        req = Requirement("REQ-4", "Parent requirement", parents=["REQ-5", "REQ-6"])
+        expected = "REQ-4: Parent requirement\n\n### Parents\n\n- REQ-5\n- REQ-6\n"
         self.assertEqual(req.to_pretty_string(), expected)
 
         # Complete requirement (critical, completed, with children)
@@ -290,9 +290,9 @@ class TestRequirementPrettyString(unittest.TestCase):
             "Complete requirement",
             critical=True,
             completed=True,
-            children=["REQ-8"],
+            parents=["REQ-8"],
         )
-        expected = "REQ-7: Complete requirement\n\n**⚠️ critical**\n\n✅ completed\n\n### Children\n\n- REQ-8\n"
+        expected = "REQ-7: Complete requirement\n\n**⚠️ critical**\n\n✅ completed\n\n### Parents\n\n- REQ-8\n"
         self.assertEqual(req.to_pretty_string(), expected)
 
 
@@ -322,14 +322,14 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
         self.assertEqual(len(reqs), 1)
         self.assertTrue(reqs[0].critical)
         self.assertTrue(reqs[0].completed)
-        self.assertEqual(reqs[0].children, ["REQ-2"])
+        self.assertEqual(reqs[0].parents, ["REQ-2"])
 
     def test_multiple_child_lines_and_duplicates(self) -> None:
         """Test multiple child-of lines and duplicate detection."""
         md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-3\n"
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
-        self.assertEqual(set(reqs[0].children), {"REQ-2", "REQ-3"})
+        self.assertEqual(set(reqs[0].parents), {"REQ-2", "REQ-3"})
 
     def test_ignore_unknown_attributes(self) -> None:
         """Test that unknown attributes are ignored."""
