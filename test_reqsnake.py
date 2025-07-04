@@ -6,17 +6,16 @@ import os
 import shutil
 import json
 import random
-from mkdocs_reqsnake.reqsnake import (
-    Requirement,
-    _parse_requirements_from_markdown,
+from mkdocs_reqsnake.models import Requirement
+from mkdocs_reqsnake.parser import (
+    parse_requirements_from_markdown,
     parse_requirements_from_files,
-    validate_requirements,
-    _progress_bar,
 )
+from mkdocs_reqsnake.validator import validate_requirements
+from mkdocs_reqsnake.utils import progress_bar
 from pathlib import Path
 import subprocess
 import sys
-import mkdocs_reqsnake.reqsnake as reqsnake
 from typing import Any
 
 
@@ -26,7 +25,7 @@ class TestRequirementParser(unittest.TestCase):
     def test_single_requirement(self) -> None:
         """Test parsing a single requirement with critical and children."""
         md = "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n> child-of: MECH-54\n> child-of: MECH-57"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             reqs[0],
@@ -52,7 +51,7 @@ class TestRequirementParser(unittest.TestCase):
 >
 > child-of: AVIO-16
 """
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 2)
         self.assertEqual(
             reqs[0],
@@ -79,7 +78,7 @@ class TestRequirementParser(unittest.TestCase):
 > SW-33
 > On-board software for the plane.
 """
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             reqs[0],
@@ -101,7 +100,7 @@ Some text.
 > The wing must withstand 5g load.
 > critical
 """
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "MECH-123")
 
@@ -127,7 +126,7 @@ Some text.
     def test_child_of_syntax(self) -> None:
         """Test that 'child-of' is supported as a child relationship key."""
         md = "> REQ-1\n> Parent requirement.\n> child-of REQ-2\n> child-of: REQ-3\n> CHILD-OF req-5\n> child-of: REQ-6\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             set(reqs[0].children),
@@ -147,13 +146,13 @@ A bit of text
 
 Moar text!
         """
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 0)
 
     def test_child_of_whitespace_and_case(self) -> None:
         """Test that 'child-of' is parsed case-insensitively and trims whitespace."""
         md = "> REQ-1\n> Parent.\n>   CHILD-OF:   REQ-2   \n> child-of   REQ-3\n> child-OF:REQ-4\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             set(reqs[0].children),
@@ -165,31 +164,31 @@ Moar text!
         # Duplicate via 'child-of' (exact)
         md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n> child-of: REQ-2\n"
         with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md)
+            parse_requirements_from_markdown(md)
         self.assertIn("Duplicate child ID", str(ctx.exception))
         # Duplicate across 'child-of' forms (case-insensitive)
         md2 = "> REQ-1\n> Parent.\n> child-of REQ-2\n> child-of: req-2\n"
         with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md2)
+            parse_requirements_from_markdown(md2)
         self.assertIn("Duplicate child ID", str(ctx.exception))
         # Duplicate with whitespace differences
         md3 = "> REQ-1\n> Parent.\n> child-of:   REQ-2   \n> child-of: REQ-2\n"
         with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md3)
+            parse_requirements_from_markdown(md3)
         self.assertIn("Duplicate child ID", str(ctx.exception))
 
     def test_multiple_child_lines_and_duplicates(self) -> None:
         """REQ-PARSER-9/99: Multiple 'child-of' lines are allowed, but duplicates must raise an error."""
         md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-2\n> child-of: REQ-3"
         with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md)
+            parse_requirements_from_markdown(md)
         self.assertIn("Duplicate child ID 'REQ-2'", str(ctx.exception))
 
     def test_requirement_id_format_enforced(self) -> None:
         """REQ-CORE-6: IDs must be in the form <STRING>-<NUMBER>."""
         # Valid IDs
         valid_md = "> REQ-1\n> Valid.\n\n> SW-33\n> Valid.\n\n> A-0\n> Valid.\n"
-        reqs = _parse_requirements_from_markdown(valid_md)
+        reqs = parse_requirements_from_markdown(valid_md)
         self.assertEqual(len(reqs), 3)
         # Invalid IDs
         invalid_cases = [
@@ -205,13 +204,13 @@ Moar text!
         ]
         for md in invalid_cases:
             with self.assertRaises(ValueError, msg=md):
-                _parse_requirements_from_markdown(md)
+                parse_requirements_from_markdown(md)
 
     def test_ascii_only_ids(self) -> None:
         """REQ-CORE-6: IDs must contain only ASCII characters."""
         # Valid ASCII IDs
         valid_md = "> REQ-1\n> Valid.\n\n> SW-33\n> Valid.\n"
-        reqs = _parse_requirements_from_markdown(valid_md)
+        reqs = parse_requirements_from_markdown(valid_md)
         self.assertEqual(len(reqs), 2)
         # Invalid non-ASCII IDs
         invalid_cases = [
@@ -220,13 +219,13 @@ Moar text!
         ]
         for invalid_md in invalid_cases:
             with self.assertRaises(ValueError) as ctx:
-                _parse_requirements_from_markdown(invalid_md)
+                parse_requirements_from_markdown(invalid_md)
             self.assertIn("contains non-ASCII characters", str(ctx.exception))
 
     def test_unknown_attributes_raise_error(self) -> None:
         """REQ-PARSER-10: Unknown attributes should be ignored, not raise a ValueError."""
         md = "> REQ-1\n> Test.\n> unknown-attr\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "REQ-1")
         self.assertEqual(reqs[0].description, "Test.")
@@ -303,14 +302,14 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
     def test_ignore_blockquotes_with_only_id_or_description(self) -> None:
         """REQ-PARSER-6: Blockquotes with only an ID or only a description should be ignored."""
         md = "> REQ-1\n\n> Just a description\n\n> REQ-2\n> Valid requirement\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "REQ-2")
 
     def test_ignore_extra_blank_lines_and_whitespace(self) -> None:
         """Test that extra blank lines and whitespace are handled correctly."""
         md = "> REQ-1\n> \n> Description\n> \n> \n> critical\n> \n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "REQ-1")
         self.assertEqual(reqs[0].description, "Description")
@@ -319,7 +318,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
     def test_attribute_keywords_case_and_spaces(self) -> None:
         """Test that attribute keywords are case-insensitive and handle whitespace."""
         md = "> REQ-1\n> Test.\n> CRITICAL\n> COMPLETED\n> CHILD-OF: REQ-2\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertTrue(reqs[0].critical)
         self.assertTrue(reqs[0].completed)
@@ -328,14 +327,14 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
     def test_multiple_child_lines_and_duplicates(self) -> None:
         """Test multiple child-of lines and duplicate detection."""
         md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-3\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(set(reqs[0].children), {"REQ-2", "REQ-3"})
 
     def test_ignore_unknown_attributes(self) -> None:
         """Test that unknown attributes are ignored."""
         md = "> REQ-1\n> Test.\n> unknown-attr\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "REQ-1")
         self.assertEqual(reqs[0].description, "Test.")
@@ -343,7 +342,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
     def test_case_sensitive_ids(self) -> None:
         """Test that requirement IDs are case-sensitive."""
         md = "> REQ-1\n> First.\n\n> req-1\n> Second.\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 2)
         self.assertEqual(reqs[0].req_id, "REQ-1")
         self.assertEqual(reqs[1].req_id, "req-1")
@@ -351,7 +350,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
     def test_inconsistent_blockquote_lines(self) -> None:
         """Test that inconsistent blockquote lines are handled."""
         md = "> REQ-1\n> Description\n> critical\n> Not a blockquote\n> completed\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertTrue(reqs[0].critical)
         self.assertTrue(reqs[0].completed)
@@ -359,7 +358,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
     def test_ignore_markdown_formatting(self) -> None:
         """Test that markdown formatting in descriptions is preserved."""
         md = "> REQ-1\n> Description with **bold** and *italic* text.\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             reqs[0].description, "Description with **bold** and *italic* text."
@@ -377,7 +376,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
     def test_unicode_support(self) -> None:
         """Test that unicode characters in descriptions are supported."""
         md = "> REQ-1\n> Description with unicode: café, naïve, 你好\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             reqs[0].description, "Description with unicode: café, naïve, 你好"
@@ -391,7 +390,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
 > Real requirement
 > critical
 """
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "REQ-1")
         self.assertTrue(reqs[0].critical)
@@ -399,7 +398,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
     def test_mixed_line_endings_and_whitespace(self) -> None:
         """Test that mixed line endings and whitespace are handled correctly."""
         md = "> REQ-1\r\n> Description\r\n> critical\r\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "REQ-1")
         self.assertEqual(reqs[0].description, "Description")
@@ -411,39 +410,39 @@ class TestProgressBar(unittest.TestCase):
 
     def test_zero_total(self) -> None:
         """Test progress bar with zero total."""
-        result = _progress_bar(0, 0)
+        result = progress_bar(0, 0)
         self.assertEqual(result, "`[" + (" " * 20) + "]`")
 
     def test_zero_completed(self) -> None:
         """Test progress bar with zero completed."""
-        result = _progress_bar(0, 10)
+        result = progress_bar(0, 10)
         self.assertEqual(result, "`[" + (" " * 20) + "]`")
 
     def test_full_completed(self) -> None:
         """Test progress bar with full completion."""
-        result = _progress_bar(10, 10)
+        result = progress_bar(10, 10)
         self.assertEqual(result, "`[" + ("█" * 20) + "]`")
 
     def test_half_completed(self) -> None:
         """Test progress bar with half completion."""
-        result = _progress_bar(5, 10)
+        result = progress_bar(5, 10)
         self.assertEqual(result, "`[" + ("█" * 10) + (" " * 10) + "]`")
 
     def test_partial_block(self) -> None:
         """Test progress bar with partial blocks."""
         # Accept any partial block character
-        result = _progress_bar(1, 8)  # 1/8 = 0.125, should be 2.5 blocks
+        result = progress_bar(1, 8)  # 1/8 = 0.125, should be 2.5 blocks
         partial_blocks = ["▏", "▎", "▍", "▌", "▋", "▊", "▉"]
         self.assertTrue(any(b in result for b in partial_blocks))
 
     def test_width_one(self) -> None:
         """Test progress bar with width of 1."""
-        result = _progress_bar(1, 2, width=1)
+        result = progress_bar(1, 2, width=1)
         self.assertEqual(result, "`[█]`")
 
     def test_overflow(self) -> None:
         """Test progress bar with overflow values."""
-        result = _progress_bar(15, 10)  # More completed than total
+        result = progress_bar(15, 10)  # More completed than total
         self.assertEqual(result, "`[" + ("█" * 20) + "]`")
 
 
