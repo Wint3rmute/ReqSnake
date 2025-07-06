@@ -12,12 +12,20 @@ class TestMkDocsPluginSimple:
 
     @pytest.fixture
     def plugin(self):
-        """Create a fresh plugin instance."""
+        """Create a fresh plugin instance.
+
+        Returns:
+            ReqSnake plugin instance for testing.
+        """
         return ReqSnake()
 
     @pytest.fixture
     def mock_config(self):
-        """Create mock MkDocs config."""
+        """Create mock MkDocs config.
+
+        Returns:
+            Mock MkDocs config object for testing.
+        """
         mock_config = Mock()
         mock_config.config_file_path = "/tmp/mkdocs.yml"
         mock_config.get = Mock(side_effect=lambda key, default=None: default)
@@ -25,7 +33,11 @@ class TestMkDocsPluginSimple:
 
     @pytest.fixture
     def mock_nav(self):
-        """Create mock navigation object."""
+        """Create mock navigation object.
+
+        Returns:
+            Mock navigation object for testing.
+        """
         mock_nav = Mock()
         mock_nav.items = []
         return mock_nav

@@ -29,7 +29,16 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
     def on_nav(
         self, nav: Navigation, /, *, config: MkDocsConfig, files: Files
     ) -> Navigation | None:
-        """Generate requirements pages and inject them into navigation."""
+        """Generate requirements pages and inject them into navigation.
+
+        Args:
+            nav: The MkDocs navigation object.
+            config: The MkDocs configuration object.
+            files: The MkDocs files collection.
+
+        Returns:
+            The updated navigation object with injected requirements pages.
+        """
         if not self.config.get("enabled", True):
             return nav
 

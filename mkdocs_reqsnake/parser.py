@@ -28,7 +28,7 @@ def parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
     Raises:
         ParseError: If parsing fails.
         InvalidRequirementIdError: If requirement ID format is invalid.
-        UnknownAttributeError: If unknown attributes are found.
+        PluginError: If unknown attributes are found.
 
     """
     # Remove HTML comments (REQ-PARSER-17)
@@ -59,7 +59,7 @@ def _parse_single_requirement_block(block: str) -> Requirement | None:
 
     Raises:
         InvalidRequirementIdError: If requirement ID format is invalid.
-        UnknownAttributeError: If unknown attributes are found.
+        PluginError: If unknown attributes are found.
 
     """
     # Only consider lines starting with '>' (REQ-PARSER-12)
@@ -144,7 +144,7 @@ def _process_attribute_line(
         Tuple of (critical, completed) flags.
 
     Raises:
-        UnknownAttributeError: If unknown attribute is found.
+        PluginError: If unknown attribute is found.
 
     """
     norm = line.strip().lower()

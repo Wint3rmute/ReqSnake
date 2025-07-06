@@ -11,7 +11,11 @@ import pytest
 
 @pytest.fixture
 def temp_dir() -> Generator[Path, None, None]:
-    """Create a temporary directory for tests."""
+    """Create a temporary directory for tests.
+
+    Yields:
+        Path to the temporary directory.
+    """
     temp_dir = tempfile.mkdtemp()
     temp_path = Path(temp_dir)
     try:
@@ -22,7 +26,11 @@ def temp_dir() -> Generator[Path, None, None]:
 
 @pytest.fixture
 def mock_config() -> Mock:
-    """Create a mock MkDocs config object."""
+    """Create a mock MkDocs config object.
+
+    Returns:
+        Mock config object for testing.
+    """
     mock_config = Mock()
     mock_config.config_file_path = None
     return mock_config
@@ -30,7 +38,11 @@ def mock_config() -> Mock:
 
 @pytest.fixture
 def mock_file_with_requirements() -> Mock:
-    """Create a mock file containing requirements."""
+    """Create a mock file containing requirements.
+
+    Returns:
+        Mock file object with requirements content.
+    """
     mock_file = Mock()
     mock_file.src_uri = "with_reqs.md"
     mock_file.content_string = "> REQ-1\n> Test requirement.\n> critical\n"
@@ -39,7 +51,11 @@ def mock_file_with_requirements() -> Mock:
 
 @pytest.fixture
 def mock_file_no_requirements() -> Mock:
-    """Create a mock file with no requirements."""
+    """Create a mock file with no requirements.
+
+    Returns:
+        Mock file object with no requirements content.
+    """
     mock_file = Mock()
     mock_file.src_uri = "no_reqs.md"
     mock_file.content_string = "# Just documentation\n\nNo requirements here."
@@ -48,7 +64,11 @@ def mock_file_no_requirements() -> Mock:
 
 @pytest.fixture
 def sample_requirement_markdown() -> str:
-    """Sample markdown content with requirements."""
+    """Sample markdown content with requirements.
+
+    Returns:
+        String containing sample markdown with requirements.
+    """
     return """
 # Sample Documentation
 
@@ -68,7 +88,11 @@ def sample_requirement_markdown() -> str:
 
 @pytest.fixture
 def complex_requirement_markdown() -> str:
-    """Complex markdown content for testing edge cases."""
+    """Complex markdown content for testing edge cases.
+
+    Returns:
+        String containing complex markdown with requirements.
+    """
     return """
 # Complex Requirements
 
@@ -92,7 +116,11 @@ def complex_requirement_markdown() -> str:
 
 @pytest.fixture
 def invalid_requirement_markdown() -> str:
-    """Invalid markdown content for testing error cases."""
+    """Invalid markdown content for testing error cases.
+
+    Returns:
+        String containing invalid markdown for testing.
+    """
     return """
 > REQ-1
 > Valid requirement.

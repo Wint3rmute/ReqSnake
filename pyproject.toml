@@ -70,16 +70,26 @@ select = [
     "SIM",
     # isort
     "I",
-
+    # # bandit
+    # "S",
+    # # Mccabe
+    # "C90",
+    # # Perflint
+    # "PERF",
+    # Pyflakes
+    # "F",
+    # PyLint
+    # "PL",
     # pydocstyle
+    # Ruff-specific lints
+    # "RUF"
     "D",
-
     # pydoclint
     "DOC"
 ]
 
 # Those rules caused conflicts at 07.2025
-ignore = ["D203", "D212"]
+ignore = ["D203", "D212", "DOC502"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

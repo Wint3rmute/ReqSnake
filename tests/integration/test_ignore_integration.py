@@ -17,14 +17,22 @@ class TestIgnoreIntegration:
 
     @pytest.fixture
     def plugin(self):
-        """Create a fresh plugin instance."""
+        """Create a fresh plugin instance.
+
+        Returns:
+            ReqSnake plugin instance for testing.
+        """
         plugin = ReqSnake()
         plugin.config = {"enabled": True}
         return plugin
 
     @pytest.fixture
     def temp_dir(self):
-        """Create temporary directory for tests."""
+        """Create temporary directory for tests.
+
+        Yields:
+            Path to the temporary directory.
+        """
         temp_dir = tempfile.mkdtemp()
         temp_path = Path(temp_dir)
         try:
@@ -34,7 +42,14 @@ class TestIgnoreIntegration:
 
     @pytest.fixture
     def mock_config(self, temp_dir):
-        """Create mock config pointing to temp directory."""
+        """Create mock config pointing to temp directory.
+
+        Args:
+            temp_dir: Temporary directory fixture.
+
+        Returns:
+            Mock config object for testing.
+        """
         mock_config = Mock()
         mock_config.config_file_path = str(temp_dir / "mkdocs.yml")
         mock_config.get = Mock(side_effect=lambda key, default=None: default)
@@ -43,14 +58,22 @@ class TestIgnoreIntegration:
 
     @pytest.fixture
     def mock_nav(self):
-        """Create mock navigation object."""
+        """Create mock navigation object.
+
+        Returns:
+            Mock navigation object for testing.
+        """
         mock_nav = Mock()
         mock_nav.items = []
         return mock_nav
 
     @pytest.fixture
     def sample_files(self):
-        """Create sample mock files for testing."""
+        """Create sample mock files for testing.
+
+        Returns:
+            Dictionary of mock file objects for testing.
+        """
         # File with requirements that should be processed
         mock_file_normal = Mock()
         mock_file_normal.src_uri = "docs/requirements.md"

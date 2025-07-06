@@ -12,7 +12,18 @@ def create_sample_requirement(
     completed: bool = False,
     parents: list[str] | None = None,
 ) -> Requirement:
-    """Create a sample requirement for testing."""
+    """Create a sample requirement for testing.
+
+    Args:
+        req_id: The requirement ID.
+        description: The requirement description.
+        critical: Whether the requirement is critical.
+        completed: Whether the requirement is completed.
+        parents: List of parent requirement IDs.
+
+    Returns:
+        A sample Requirement instance.
+    """
     return Requirement(
         req_id=req_id,
         description=description,
@@ -30,7 +41,19 @@ def create_sample_parsed_requirement(
     completed: bool = False,
     parents: list[str] | None = None,
 ) -> ParsedRequirement:
-    """Create a sample parsed requirement for testing."""
+    """Create a sample parsed requirement for testing.
+
+    Args:
+        req_id: The requirement ID.
+        description: The requirement description.
+        source_file: The source file path.
+        critical: Whether the requirement is critical.
+        completed: Whether the requirement is completed.
+        parents: List of parent requirement IDs.
+
+    Returns:
+        A sample ParsedRequirement instance.
+    """
     requirement = create_sample_requirement(
         req_id=req_id,
         description=description,
