@@ -68,15 +68,3 @@ class ParsedRequirement:
 
     requirement: Requirement
     source_file: Path
-
-
-class DiffType(Enum):
-    """Enum representing types of requirement diffs: added, removed, or changed."""
-
-    ADDED = auto()
-    REMOVED = auto()
-    CHANGED = auto()
-
-    def __str__(self) -> str:
-        """Return the lowercase name of the DiffType enum member."""
-        return self.name.lower()

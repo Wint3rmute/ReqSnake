@@ -2,9 +2,7 @@
 
 import fnmatch
 from pathlib import Path
-from typing import Dict, List
-
-from .models import DiffType, Requirement
+from typing import List
 
 
 def load_ignore_patterns(config_dir: Path) -> List[str]:
