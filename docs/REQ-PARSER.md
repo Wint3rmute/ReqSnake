@@ -2,15 +2,25 @@
 
 > REQ-PARSER-0
 >
-> A valid requirement is a blockquote with unique requirement ID as the first line in the form of "<STRING>-<NUMBER>", requirement description as a second line and additional fields as lines below.
+> A valid requirement is a blockquote with unique requirement ID as the first line in the form of `STRING-NUMBER`, requirement description as a second line and additional fields as lines below.
 >
 > critical
 >
 > child-of: REQ-PARSER-1
 
+> REQ-PARSER-1
+>
+> The Markdown parser shall extract requirements from Markdown blockquotes compliant with the specified format.
+>
+> child-of: REQ-CORE-1
+>
+> critical
+
 > REQ-PARSER-2
+>
 > The parser shall raise an error if a requirement ID is duplicated in the scanned files.
-> child-of: REQ-CORE-2
+>
+> child-of: REQ-PARSER-0
 
 > REQ-PARSER-3
 > The parser shall support the 'critical', 'child', and 'completed' attributes in the blockquote format.
@@ -20,7 +30,7 @@
 >
 > Child relationships shall be described with a "child-of" key. Example: "child-of REQ-123"
 >
-> child-of: REQ-CORE-5
+> child-of: REQ-CORE-3
 
 > REQ-PARSER-5
 > The parser shall be dependency-free and use only the Python standard library.
@@ -38,7 +48,7 @@ Todo: this should be changed to raise errors instead?
 
 > REQ-PARSER-8
 > The parser shall treat attribute keywords (e.g., 'critical', 'child-of', 'completed') case-insensitively and ignore leading/trailing spaces.
-> child-of: REQ-CORE-2
+> child-of: REQ-PARSER-0
 
 > REQ-PARSER-9
 > The parser shall allow multiple 'child-of:' lines per requirement, allowing linking a requirement to multiple parents.
@@ -46,7 +56,7 @@ Todo: this should be changed to raise errors instead?
 
 > REQ-PARSER-10
 > The parser shall raise errors on unknown attributes in requirement definitions.
-> child-of: REQ-CORE-2
+> child-of: REQ-PARSER-0
 
 > REQ-PARSER-11
 > The parser shall treat requirement IDs as case-sensitive and not allow IDs with only case differences.
@@ -63,10 +73,6 @@ Todo: this should be changed to raise errors instead?
 > REQ-PARSER-14
 > The parser shall ignore blockquotes that span multiple paragraphs (i.e., with blank lines in between).
 > child-of: REQ-PARSER-1
-
-> REQ-PARSER-15
-> The parser shall raise an error if a circular child relationship is detected.
-> child-of: REQ-CORE-2
 
 > REQ-PARSER-16
 > The parser shall support requirements and attributes containing Unicode characters.
@@ -85,7 +91,7 @@ Todo: this should be changed to raise errors instead?
 > child-of: REQ-CORE-2
 
 > REQ-PARSER-20
-> The application shall allow for specification of filesystem paths to be ignored during requirements scanning. A file `.requirementsignore` shall be used to specify the list of filesystem paths to ignore, similar to how .gitignore works.
+> ReqSnake shall allow for specification of filesystem paths to be ignored during requirements scanning. A file `.requirementsignore` shall be used to specify the list of filesystem paths to ignore, similar to how .gitignore works.
 > child-of: REQ-CORE-1
 
 > REQ-PARSER-21

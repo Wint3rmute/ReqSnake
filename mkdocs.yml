@@ -4,9 +4,10 @@ strict: true
 
 nav:
   - Overview: README.md
-  - MkDocs Integration: REQ-INTEGRATION.md
   - Markdown Parser: REQ-PARSER.md
+  - Requirements Checking: REQ-CHECKS.md
   - Output Formats: REQ-OUTPUT.md
+  - MkDocs Integration: REQ-INTEGRATION.md
   - Testing: REQ-TEST.md
 
 theme:
