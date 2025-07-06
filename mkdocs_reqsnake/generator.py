@@ -35,6 +35,18 @@ def generate_requirement_page_content(
             return desc
         return " ".join(words[:max_words]) + "..."
 
+    def _sanitize_for_mermaid(text: str) -> str:
+        """Sanitize text for use in Mermaid mindmap nodes.
+
+        Args:
+            text: The text to sanitize.
+
+        Returns:
+            Sanitized text wrapped in backticks for safe Mermaid rendering.
+        """
+        # Always wrap in backticks for future-proof sanitization
+        return f'"`{text}`"'
+
     def _get_requirement_by_id(req_id: str) -> str:
         """Get requirement description by ID.
 
@@ -77,7 +89,9 @@ def generate_requirement_page_content(
         lines.append("")
         lines.append("```mermaid")
         lines.append("mindmap")
-        lines.append(f"  root(({req.req_id}))")
+        # Sanitize root node text
+        root_text = _sanitize_for_mermaid(req.req_id)
+        lines.append(f"  root(({root_text}))")
 
         # Add child nodes
         sorted_children = sorted(children)
@@ -86,7 +100,9 @@ def generate_requirement_page_content(
             if child_desc:
                 # Truncate description for mindmap display
                 truncated_desc = _truncate_description(child_desc, max_words=7)
-                lines.append(f"    {child_id}[{child_id}: {truncated_desc}]")
+                # Sanitize the text for Mermaid mindmap
+                sanitized_text = _sanitize_for_mermaid(f"{child_id}: {truncated_desc}")
+                lines.append(f"    {child_id}[{sanitized_text}]")
             else:
                 lines.append(f"    {child_id}")
 

@@ -84,10 +84,55 @@ class TestRequirementPageGeneration:
         assert "## Children Mindmap" in content
         assert "```mermaid" in content
         assert "mindmap" in content
-        assert "root((REQ-0))" in content
+        assert 'root(("`REQ-0`"))' in content
         # The actual generator doesn't truncate to "..." but shows full description
-        assert "REQ-1[REQ-1: First child requirement]" in content
-        assert "REQ-2[REQ-2: Second child requirement]" in content
+        assert '"`REQ-1: First child requirement`"' in content
+        assert '"`REQ-2: Second child requirement`"' in content
+
+    def test_mindmap_sanitization_with_special_characters(self):
+        """Test that mindmap generation sanitizes special characters correctly."""
+        parent = create_sample_parsed_requirement(
+            "REQ-PARSER-8",
+            "The parser shall treat attribute keywords (e.g., 'critical', 'child-of', "
+            "'completed') case-insensitively",
+        )
+        child = create_sample_parsed_requirement(
+            "REQ-PARSER-9",
+            "Parse requirements with [brackets] and {braces}",
+            parents=["REQ-PARSER-8"],
+        )
+
+        all_reqs = [parent, child]
+        content = generate_requirement_page_content(parent, all_reqs)
+
+        assert "## Children Mindmap" in content
+        assert "```mermaid" in content
+        assert "mindmap" in content
+
+        # Check that all text is properly sanitized with backticks
+        assert 'root(("`REQ-PARSER-8`"))' in content  # All text is now sanitized
+        assert (
+            '"`REQ-PARSER-9: Parse requirements with [brackets] and {braces}`"'
+            in content
+        )
+
+    def test_mindmap_sanitization_with_special_chars_in_root_id(self):
+        """Test that mindmap generation sanitizes special characters in root node ID."""
+        parent = create_sample_parsed_requirement(
+            "REQ-PARSER(8)", "Root with special chars in ID"
+        )
+        child = create_sample_parsed_requirement(
+            "REQ-PARSER-9", "Normal child", parents=["REQ-PARSER(8)"]
+        )
+
+        all_reqs = [parent, child]
+        content = generate_requirement_page_content(parent, all_reqs)
+
+        assert "## Children Mindmap" in content
+
+        # Check that all text is properly sanitized with backticks
+        assert 'root(("`REQ-PARSER(8)`"))' in content
+        assert '"`REQ-PARSER-9: Normal child`"' in content
 
     def test_completion_statistics_parents(self):
         """Test completion statistics for parents."""
