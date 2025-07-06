@@ -1,5 +1,13 @@
 # Markdown Parser
 
+> REQ-PARSER-0
+>
+> A valid requirement is a blockquote with unique requirement ID as the first line in the form of "<STRING>-<NUMBER>", requirement description as a second line and additional fields as lines below.
+>
+> critical
+>
+> child-of: REQ-PARSER-1
+
 > REQ-PARSER-2
 > The parser shall raise an error if a requirement ID is duplicated in the scanned files.
 > child-of: REQ-CORE-2
@@ -9,8 +17,10 @@
 > child-of: REQ-CORE-2
 
 > REQ-PARSER-4
-> The parser shall ignore non-blockquote content in Markdown files.
-> child-of: REQ-PARSER-1
+>
+> Child relationships shall be described with a "child-of" key. Example: "child-of REQ-123"
+>
+> child-of: REQ-CORE-5
 
 > REQ-PARSER-5
 > The parser shall be dependency-free and use only the Python standard library.
@@ -77,3 +87,7 @@ Todo: this should be changed to raise errors instead?
 > REQ-PARSER-20
 > The application shall allow for specification of filesystem paths to be ignored during requirements scanning. A file `.requirementsignore` shall be used to specify the list of filesystem paths to ignore, similar to how .gitignore works.
 > child-of: REQ-CORE-1
+
+> REQ-PARSER-21
+> The parser shall ignore non-blockquote content in Markdown files.
+> child-of: REQ-PARSER-1

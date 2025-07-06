@@ -7,19 +7,11 @@ This file contains requirements related to output generation and MkDocs plugin f
 > child-of: REQ-CORE-4
 
 > REQ-OUTPUT-2
-> The MkDocs plugin shall generate an index page listing all requirements grouped by source file.
+> The MkDocs plugin shall generate an index page listing all requirements grouped by the requirement category.
 > child-of: REQ-CORE-4
 
 > REQ-OUTPUT-3
 > The MkDocs plugin shall include links back to source files in generated requirement pages.
-> child-of: REQ-CORE-4
-
-> REQ-OUTPUT-4
-> The MkDocs plugin shall support configuration to enable/disable the plugin.
-> child-of: REQ-CORE-4
-
-> REQ-OUTPUT-5
-> The MkDocs plugin shall provide proper error handling and logging without failing the MkDocs build.
 > child-of: REQ-CORE-4
 
 > REQ-OUTPUT-6
@@ -32,4 +24,4 @@ This file contains requirements related to output generation and MkDocs plugin f
 
 > REQ-OUTPUT-8
 > The plugin shall generate requirement pages with proper Markdown formatting including status indicators and child relationships.
-> child-of: REQ-CORE-4 
+> child-of: REQ-CORE-4
