@@ -109,3 +109,5 @@ precision = 2
 [tool.coverage.html]
 directory = "htmlcov"
 
+[tool.mypy]
+strict = true
