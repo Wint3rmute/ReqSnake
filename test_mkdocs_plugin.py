@@ -73,7 +73,7 @@ class TestMkDocsPlugin(unittest.TestCase):
 
         # Create mock file
         mock_file = Mock()
-        mock_file.src_dir = "docs"
+        mock_file.src_uri = "test_requirements.md"
         mock_file.content_string = test_content
 
         # Create mock files collection
@@ -139,7 +139,7 @@ class TestMkDocsPlugin(unittest.TestCase):
 
         # Create mock file
         mock_file = Mock()
-        mock_file.src_dir = "docs"
+        mock_file.src_uri = "complex_reqs.md"
         mock_file.content_string = test_content
 
         # Create mock files collection
@@ -162,11 +162,11 @@ class TestMkDocsPlugin(unittest.TestCase):
         """Test on_files with requirements spread across multiple files."""
         # Create multiple mock files with requirements
         mock_file1 = Mock()
-        mock_file1.src_dir = "docs"
+        mock_file1.src_uri = "first_file.md"
         mock_file1.content_string = "> REQ-1\n> First file requirement.\n"
 
         mock_file2 = Mock()
-        mock_file2.src_dir = "docs"
+        mock_file2.src_uri = "second_file.md"
         mock_file2.content_string = "> REQ-2\n> Second file requirement.\n"
 
         # Create mock files collection
@@ -192,7 +192,7 @@ class TestMkDocsPlugin(unittest.TestCase):
 
         # Create mock file
         mock_file = Mock()
-        mock_file.src_dir = "docs"
+        mock_file.src_uri = "generated_test.md"
         mock_file.content_string = test_content
 
         # Create mock files collection
@@ -235,7 +235,7 @@ class TestMkDocsPlugin(unittest.TestCase):
 
         # Create mock file
         mock_file = Mock()
-        mock_file.src_dir = "docs"
+        mock_file.src_uri = "index_test.md"
         mock_file.content_string = test_content
 
         # Create mock files collection
@@ -282,7 +282,10 @@ class TestIgnoreIntegration(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up test fixtures with temporary directory."""
+        # Ensure fresh plugin instance with fresh config
         self.plugin = ReqSnake()
+        self.plugin.config = {"enabled": True}
+
         self.temp_dir = tempfile.mkdtemp()
         self.temp_path = Path(self.temp_dir)
 

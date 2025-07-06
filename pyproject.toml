@@ -30,17 +30,17 @@ keywords = ["mkdocs", "plugin", "requirements", "documentation"]
 #
 # For a list of valid classifiers, see https://pypi.org/classifiers/
 classifiers = [
-  "Development Status :: 3 - Alpha",
+    "Development Status :: 3 - Alpha",
 
-  # Indicate who your project is intended for
-  "Intended Audience :: Developers",
-  "Programming Language :: Python :: 3.11",
+    # Indicate who your project is intended for
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
 ]
 
 dependencies = ["mkdocs>=1.6", "mkdocs-material>=9.6"]
 
 [project.optional-dependencies]
-dev = ["ruff", "mypy"]
+dev = ["ruff", "mypy", "pytest", "pytest-cov"]
 
 [project.urls]
 "Homepage" = "https://github.com/Wint3rmute/ReqSnake/"
@@ -69,3 +69,37 @@ select = [
     # isort
     "I",
 ]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-markers",
+    "--strict-config", 
+    "--verbose",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+
+[tool.coverage.run]
+source = ["mkdocs_reqsnake"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError", 
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
