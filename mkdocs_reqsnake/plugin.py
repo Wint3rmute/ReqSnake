@@ -5,6 +5,7 @@ from pathlib import Path
 from mkdocs.config import config_options
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.plugins import BasePlugin, get_plugin_logger
+from mkdocs.structure import StructureItem
 from mkdocs.structure.files import File, Files, InclusionLevel
 from mkdocs.structure.nav import Navigation, Section
 from mkdocs.structure.pages import Page
@@ -25,9 +26,19 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
 
     config_scheme = (("enabled", config_options.Type(bool, default=True)),)
 
+    def on_nav(
+        self, nav: Navigation, /, *, config: MkDocsConfig, files: Files
+    ) -> Navigation | None:
+        """Generate requirements pages and inject them into navigation.
 
-    def on_nav(self, nav: Navigation, /, *, config: MkDocsConfig, files: Files) -> Navigation | None:
-        """Generate requirements pages and inject them into navigation."""
+        Args:
+            nav: The MkDocs navigation object.
+            config: The MkDocs configuration object.
+            files: The MkDocs files collection.
+
+        Returns:
+            The updated navigation object with injected requirements pages.
+        """
         if not self.config.get("enabled", True):
             return nav
 
@@ -106,7 +117,7 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
         logger.info(f"Generated {len(parsed_requirements)} requirement pages and index")
 
         # Group requirement files by category for navigation
-        categories = {}
+        categories: dict[str, list[File]] = {}
         for req_file in generated_files:
             # Extract category from path: reqsnake/REQ-CORE/REQ-CORE-1.md -> REQ-CORE
             path_parts = req_file.src_uri.split("/")
@@ -117,35 +128,38 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
                 categories[category].append(req_file)
 
         # Create the main Requirements section
-        requirements_children = []
-        
+        requirements_children: list[StructureItem] = []
+
         # Add the index page first
         requirements_index = Page("Overview", index_file, config)
         requirements_children.append(requirements_index)
-        
+
         # Add category subsections
         for category, cat_files in sorted(categories.items()):
-            category_children = []
-            
+            category_children: list[StructureItem] = []
+
             # Sort files by requirement ID for consistent ordering
             sorted_files = sorted(cat_files, key=lambda f: f.src_uri.split("/")[-1])
-            
+
             for req_file in sorted_files:
                 # Extract requirement ID from filename: REQ-CORE-1.md -> REQ-CORE-1
                 req_id = req_file.src_uri.split("/")[-1].replace(".md", "")
                 req_page = Page(req_id, req_file, config)
                 category_children.append(req_page)
-            
+
             # Create category section
             category_section = Section(category, category_children)
             requirements_children.append(category_section)
-        
+
         # Create the main Requirements section
         requirements_section = Section("Requirements", requirements_children)
-        
+
         # Add the Requirements section to navigation
         nav.items.append(requirements_section)
-        
-        logger.info(f"Injected ReqSnake navigation with {len(categories)} categories and {len(generated_files)} pages")
+
+        logger.info(
+            f"Injected ReqSnake navigation with {len(categories)} categories "
+            f"and {len(generated_files)} pages"
+        )
 
         return nav

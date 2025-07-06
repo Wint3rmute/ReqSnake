@@ -5,7 +5,8 @@ from pathlib import Path
 
 
 def load_ignore_patterns(config_dir: Path) -> list[str]:
-    """Load ignore patterns from .requirementsignore file.
+    """
+    Load ignore patterns from .requirementsignore file.
 
     Args:
         config_dir: Directory to look for .requirementsignore file.
@@ -25,7 +26,11 @@ def load_ignore_patterns(config_dir: Path) -> list[str]:
                 line = line.strip()
                 # Skip empty lines and comments
                 if line and not line.startswith("#"):
-                    patterns.append(line)
+                    # Remove inline comments
+                    if "#" in line:
+                        line = line.split("#", 1)[0].strip()
+                    if line:  # Only add non-empty patterns after comment removal
+                        patterns.append(line)
         return patterns
     except (OSError, UnicodeDecodeError):
         # If we can't read the file, just return empty patterns
@@ -33,7 +38,8 @@ def load_ignore_patterns(config_dir: Path) -> list[str]:
 
 
 def should_ignore_file(file_path: str, ignore_patterns: list[str]) -> bool:
-    """Check if a file should be ignored based on ignore patterns.
+    """
+    Check if a file should be ignored based on ignore patterns.
 
     Args:
         file_path: The file path to check.

@@ -6,7 +6,8 @@ from .models import ParsedRequirement
 def generate_requirement_page_content(
     parsed_req: ParsedRequirement, all_requirements: list[ParsedRequirement]
 ) -> str:
-    """Generate Markdown content for a single requirement page.
+    """
+    Generate Markdown content for a single requirement page.
 
     Args:
         parsed_req: ParsedRequirement object with requirement and source file.
@@ -20,14 +21,29 @@ def generate_requirement_page_content(
     source_file = parsed_req.source_file
 
     def _truncate_description(desc: str, max_words: int = 4) -> str:
-        """Truncate description to first few words for diagram display."""
+        """Truncate description to first few words for diagram display.
+
+        Args:
+            desc: The description to truncate.
+            max_words: Maximum number of words to keep.
+
+        Returns:
+            The truncated description.
+        """
         words = desc.split()
         if len(words) <= max_words:
             return desc
         return " ".join(words[:max_words]) + "..."
 
     def _get_requirement_by_id(req_id: str) -> str:
-        """Get requirement description by ID."""
+        """Get requirement description by ID.
+
+        Args:
+            req_id: The requirement ID to look for.
+
+        Returns:
+            The requirement description, or empty string if not found.
+        """
         for other_req in all_requirements:
             if other_req.requirement.req_id == req_id:
                 return other_req.requirement.description
@@ -150,7 +166,8 @@ def generate_requirement_page_content(
 def generate_requirement_index_content(
     parsed_requirements: list[ParsedRequirement],
 ) -> str:
-    """Generate Markdown content for the requirements index page.
+    """
+    Generate Markdown content for the requirements index page.
 
     Args:
         parsed_requirements: List of all ParsedRequirement objects.

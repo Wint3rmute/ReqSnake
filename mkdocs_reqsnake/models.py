@@ -7,7 +7,8 @@ from typing import Any
 
 @dataclass(frozen=True)
 class Requirement:
-    """Represent a requirement parsed from a Markdown block-quote.
+    """
+    Represent a requirement parsed from a Markdown block-quote.
 
     Attributes:
         req_id: The unique identifier of the requirement.
@@ -26,7 +27,14 @@ class Requirement:
 
     @staticmethod
     def from_dict(data: dict[str, Any]) -> "Requirement":
-        """Create a Requirement from a dictionary."""
+        """Create a Requirement from a dictionary.
+
+        Args:
+            data: Dictionary containing requirement data.
+
+        Returns:
+            A new Requirement instance.
+        """
         return Requirement(
             req_id=data["req_id"],
             description=data["description"],
@@ -38,7 +46,11 @@ class Requirement:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert requirement to dictionary."""
+        """Convert requirement to dictionary.
+
+        Returns:
+            Dictionary representation of the requirement.
+        """
         return {
             "req_id": self.req_id,
             "description": self.description,

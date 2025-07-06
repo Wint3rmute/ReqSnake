@@ -12,7 +12,8 @@ from .models import ParsedRequirement, Requirement
 
 
 def validate_requirements(parsed_requirements: list[ParsedRequirement]) -> None:
-    """Run all validation checks on parsed requirements.
+    """
+    Run all validation checks on parsed requirements.
 
     Args:
         parsed_requirements: List of ParsedRequirement objects to validate.
@@ -35,7 +36,8 @@ def validate_requirements(parsed_requirements: list[ParsedRequirement]) -> None:
 
 
 def validate_no_duplicate_ids(parsed_requirements: list[ParsedRequirement]) -> None:
-    """Validate that no duplicate requirement IDs exist across files.
+    """
+    Validate that no duplicate requirement IDs exist across files.
 
     Args:
         parsed_requirements: List of ParsedRequirement objects to validate.
@@ -60,7 +62,8 @@ def validate_no_duplicate_ids(parsed_requirements: list[ParsedRequirement]) -> N
 
 
 def validate_parent_existence(requirements: list[Requirement]) -> None:
-    """Validate that all referenced parents exist in the requirements list.
+    """
+    Validate that all referenced parents exist in the requirements list.
 
     Args:
         requirements: List of Requirement objects to validate.
@@ -83,7 +86,8 @@ def validate_parent_existence(requirements: list[Requirement]) -> None:
 
 
 def validate_no_cycles(requirements: list[Requirement]) -> None:
-    """Validate that no circular dependencies exist in the requirements graph.
+    """
+    Validate that no circular dependencies exist in the requirements graph.
 
     Args:
         requirements: List of Requirement objects to validate.
@@ -131,7 +135,8 @@ def validate_no_cycles(requirements: list[Requirement]) -> None:
 
 
 def validate_completed_children(requirements: list[Requirement]) -> None:
-    """Validate that completed requirements don't have incomplete children.
+    """
+    Validate that completed requirements don't have incomplete children.
 
     Args:
         requirements: List of Requirement objects to validate.

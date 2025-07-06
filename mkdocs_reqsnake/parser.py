@@ -16,7 +16,8 @@ BLOCKQUOTE_PATTERN = re.compile(
 
 
 def parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
-    """Parse requirements from Markdown text using block-quote syntax.
+    """
+    Parse requirements from Markdown text using block-quote syntax.
 
     Args:
         md_text: The Markdown text to parse.
@@ -27,7 +28,7 @@ def parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
     Raises:
         ParseError: If parsing fails.
         InvalidRequirementIdError: If requirement ID format is invalid.
-        UnknownAttributeError: If unknown attributes are found.
+        PluginError: If unknown attributes are found.
 
     """
     # Remove HTML comments (REQ-PARSER-17)
@@ -47,7 +48,8 @@ def parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
 
 
 def _parse_single_requirement_block(block: str) -> Requirement | None:
-    """Parse a single requirement block.
+    """
+    Parse a single requirement block.
 
     Args:
         block: The blockquote block text.
@@ -57,7 +59,7 @@ def _parse_single_requirement_block(block: str) -> Requirement | None:
 
     Raises:
         InvalidRequirementIdError: If requirement ID format is invalid.
-        UnknownAttributeError: If unknown attributes are found.
+        PluginError: If unknown attributes are found.
 
     """
     # Only consider lines starting with '>' (REQ-PARSER-12)
@@ -95,7 +97,8 @@ def _parse_single_requirement_block(block: str) -> Requirement | None:
 
 
 def _validate_requirement_id(req_id: str) -> None:
-    """Validate requirement ID format.
+    """
+    Validate requirement ID format.
 
     Args:
         req_id: The requirement ID to validate.
@@ -126,7 +129,8 @@ def _process_attribute_line(
     critical: bool,
     completed: bool,
 ) -> tuple[bool, bool]:
-    """Process a single attribute line.
+    """
+    Process a single attribute line.
 
     Args:
         line: The attribute line to process.
@@ -140,7 +144,7 @@ def _process_attribute_line(
         Tuple of (critical, completed) flags.
 
     Raises:
-        UnknownAttributeError: If unknown attribute is found.
+        PluginError: If unknown attribute is found.
 
     """
     norm = line.strip().lower()
@@ -160,7 +164,8 @@ def _process_attribute_line(
 def _process_child_of_line(
     line: str, req_id: str, seen_parents: set[str], parents: list[str]
 ) -> None:
-    """Process a child-of attribute line.
+    """
+    Process a child-of attribute line.
 
     Args:
         line: The child-of line to process.
@@ -191,7 +196,8 @@ def _process_child_of_line(
 def parse_requirements_from_files(
     file_data: list[tuple[str, str]],
 ) -> list[ParsedRequirement]:
-    """Parse requirements from a list of (file_path, content) tuples.
+    """
+    Parse requirements from a list of (file_path, content) tuples.
 
     Args:
         file_data: List of (file_path, content_string) tuples.

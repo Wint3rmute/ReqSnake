@@ -52,7 +52,9 @@ package-dir = { mkdocs_reqsnake = "mkdocs_reqsnake" }
 reqsnake = "mkdocs_reqsnake.plugin:ReqSnake"
 
 [tool.ruff.lint]
-# 1. Enable flake8-bugbear (`B`) rules, in addition to the defaults.
+# Enables rules which are not fully stabilized yet
+preview = true
+
 select = [
     # pycodestyle
     "E",
@@ -68,7 +70,26 @@ select = [
     "SIM",
     # isort
     "I",
+    # # Mccabe
+    # "C90",
+    # # Perflint
+    # "PERF",
+    # Pyflakes
+    "F",
+    # Ruff-specific lints
+    "RUF",
+    # pydocstyle
+    "D",
+    # pydoclint
+    "DOC"
 ]
+
+# Those rules caused conflicts at 07.2025
+ignore = ["D203", "D212", "DOC502"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
 
 [tool.pytest.ini_options]
 addopts = [
@@ -79,7 +100,12 @@ addopts = [
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
 ]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 
 [tool.coverage.run]
 source = ["mkdocs_reqsnake"]
@@ -103,3 +129,6 @@ precision = 2
 
 [tool.coverage.html]
 directory = "htmlcov"
+
+[tool.mypy]
+strict = true

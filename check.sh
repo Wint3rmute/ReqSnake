@@ -9,7 +9,7 @@ python -m ruff format .
 python -m ruff check .
 
 # Run mypy type checker
-python -m mypy .
+python -m mypy mkdocs_reqsnake/
 
 pytest --cov=mkdocs_reqsnake --cov-report=term-missing --cov-fail-under=90 .
 
