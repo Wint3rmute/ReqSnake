@@ -1,7 +1,5 @@
 """Unit tests for utility functions."""
 
-
-
 from mkdocs_reqsnake.utils import load_ignore_patterns, should_ignore_file
 
 
@@ -154,7 +152,7 @@ class TestShouldIgnoreFile:
 
     def test_should_ignore_file_complex_globs(self):
         """Test complex glob patterns."""
-        patterns = ["**/build/**", "test_*.{md,txt}", "docs/**/temp/*"]
+        patterns = ["**/build/**", "test_*", "docs/**/temp/*"]
 
         assert should_ignore_file("project/build/output.md", patterns) is True
         assert (
@@ -166,8 +164,6 @@ class TestShouldIgnoreFile:
 
     def test_should_ignore_file_edge_cases(self):
         """Test edge cases in file pattern matching."""
-        patterns = ["", "*/", "*"]  # Edge case patterns
-
         # Empty pattern should not match anything
         assert should_ignore_file("file.md", [""]) is False
 

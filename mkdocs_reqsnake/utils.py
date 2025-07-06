@@ -25,7 +25,11 @@ def load_ignore_patterns(config_dir: Path) -> list[str]:
                 line = line.strip()
                 # Skip empty lines and comments
                 if line and not line.startswith("#"):
-                    patterns.append(line)
+                    # Remove inline comments
+                    if "#" in line:
+                        line = line.split("#", 1)[0].strip()
+                    if line:  # Only add non-empty patterns after comment removal
+                        patterns.append(line)
         return patterns
     except (OSError, UnicodeDecodeError):
         # If we can't read the file, just return empty patterns

@@ -10,6 +10,8 @@ import pytest
 from mkdocs_reqsnake.plugin import ReqSnake
 
 
+@patch("mkdocs_reqsnake.plugin.Section")
+@patch("mkdocs_reqsnake.plugin.Page")
 class TestIgnoreIntegration:
     """Integration tests for .requirementsignore functionality with the plugin."""
 
@@ -35,6 +37,8 @@ class TestIgnoreIntegration:
         """Create mock config pointing to temp directory."""
         mock_config = Mock()
         mock_config.config_file_path = str(temp_dir / "mkdocs.yml")
+        mock_config.get = Mock(side_effect=lambda key, default=None: default)
+        # Ensure Path(config.config_file_path).parent works properly
         return mock_config
 
     @pytest.fixture
@@ -82,12 +86,16 @@ class TestIgnoreIntegration:
         }
 
     def test_ignore_functionality_no_ignore_file(
-        self, plugin, mock_nav, mock_config, sample_files
+        self, mock_page, mock_section, plugin, mock_nav, mock_config, sample_files
     ):
         """Test that all files are processed when no .requirementsignore exists."""
         mock_files = MagicMock()
         mock_files.documentation_pages.return_value = list(sample_files.values())
         mock_files.append = MagicMock()
+
+        # Mock the constructors
+        mock_page.return_value = Mock()
+        mock_section.return_value = Mock()
 
         plugin.on_nav(mock_nav, config=mock_config, files=mock_files)
 
@@ -95,7 +103,14 @@ class TestIgnoreIntegration:
         assert mock_files.append.call_count == 5  # 4 req pages + 1 index
 
     def test_ignore_functionality_with_patterns(
-        self, plugin, mock_nav, mock_config, sample_files, temp_dir
+        self,
+        mock_page,
+        mock_section,
+        plugin,
+        mock_nav,
+        mock_config,
+        sample_files,
+        temp_dir,
     ):
         """Test that files are ignored based on .requirementsignore patterns."""
         # Create .requirementsignore file
@@ -131,7 +146,7 @@ build/
             assert "Ignored 2 files" in str(ignore_calls[0])
 
     def test_ignore_functionality_glob_patterns(
-        self, plugin, mock_nav, mock_config, temp_dir
+        self, mock_page, mock_section, plugin, mock_nav, mock_config, temp_dir
     ):
         """Test that glob patterns work correctly in .requirementsignore."""
         # Create .requirementsignore file with glob patterns
@@ -145,21 +160,19 @@ docs/test_*
         # Create additional mock files
         mock_file_tmp = Mock()
         mock_file_tmp.src_uri = "file.tmp"
-        mock_file_tmp.content_string = "> REQ-TMP\n> Temp requirement"
+        mock_file_tmp.content_string = "> REQ-3\n> Temp requirement"
 
         mock_file_nested_build = Mock()
         mock_file_nested_build.src_uri = "project/build/nested.md"
-        mock_file_nested_build.content_string = (
-            "> REQ-NESTED\n> Nested build requirement"
-        )
+        mock_file_nested_build.content_string = "> REQ-4\n> Nested build requirement"
 
         mock_file_normal = Mock()
         mock_file_normal.src_uri = "docs/requirements.md"
-        mock_file_normal.content_string = "> REQ-NORMAL\n> Normal requirement"
+        mock_file_normal.content_string = "> REQ-1\n> Normal requirement"
 
         mock_file_test = Mock()
         mock_file_test.src_uri = "docs/test_file.md"
-        mock_file_test.content_string = "> REQ-TEST\n> Test requirement"
+        mock_file_test.content_string = "> REQ-2\n> Test requirement"
 
         mock_files = MagicMock()
         mock_files.documentation_pages.return_value = [
@@ -169,6 +182,10 @@ docs/test_*
             mock_file_nested_build,  # Should be ignored (**/build/**)
         ]
         mock_files.append = MagicMock()
+
+        # Mock the constructors
+        mock_page.return_value = Mock()
+        mock_section.return_value = Mock()
 
         with patch("mkdocs_reqsnake.plugin.logger") as mock_logger:
             plugin.on_nav(mock_nav, config=mock_config, files=mock_files)
@@ -186,7 +203,14 @@ docs/test_*
             assert "Ignored 3 files" in str(ignore_calls[0])
 
     def test_ignore_functionality_with_comments_and_blanks(
-        self, plugin, mock_nav, mock_config, sample_files, temp_dir
+        self,
+        mock_page,
+        mock_section,
+        plugin,
+        mock_nav,
+        mock_config,
+        sample_files,
+        temp_dir,
     ):
         """Test comments and blank lines in .requirementsignore are handled."""
         ignore_content = """# This is a comment
@@ -210,13 +234,24 @@ build/
         ]
         mock_files.append = MagicMock()
 
+        # Mock the constructors
+        mock_page.return_value = Mock()
+        mock_section.return_value = Mock()
+
         plugin.on_nav(mock_nav, config=mock_config, files=mock_files)
 
         # Only 2 requirements should be processed
         assert mock_files.append.call_count == 3  # 2 req pages + 1 index
 
     def test_ignore_functionality_error_handling(
-        self, plugin, mock_nav, mock_config, sample_files, temp_dir
+        self,
+        mock_page,
+        mock_section,
+        plugin,
+        mock_nav,
+        mock_config,
+        sample_files,
+        temp_dir,
     ):
         """Test that plugin handles .requirementsignore read errors gracefully."""
         # Create a .requirementsignore file and then make it unreadable
@@ -231,6 +266,10 @@ build/
         ]
         mock_files.append = MagicMock()
 
+        # Mock the constructors
+        mock_page.return_value = Mock()
+        mock_section.return_value = Mock()
+
         try:
             # Should not raise an exception and should process all files
             plugin.on_nav(mock_nav, config=mock_config, files=mock_files)
@@ -242,7 +281,7 @@ build/
             ignore_file.chmod(0o644)
 
     def test_ignore_functionality_unicode_handling(
-        self, plugin, mock_nav, mock_config, temp_dir
+        self, mock_page, mock_section, plugin, mock_nav, mock_config, temp_dir
     ):
         """Test that unicode in ignore files is handled properly."""
         ignore_content = """# Test with unicode: café
@@ -272,13 +311,17 @@ test_*.md
         ]
         mock_files.append = MagicMock()
 
+        # Mock the constructors
+        mock_page.return_value = Mock()
+        mock_section.return_value = Mock()
+
         plugin.on_nav(mock_nav, config=mock_config, files=mock_files)
 
         # Only 1 requirement should be processed
         assert mock_files.append.call_count == 2  # 1 req page + 1 index
 
     def test_ignore_functionality_relative_paths(
-        self, plugin, mock_nav, mock_config, temp_dir
+        self, mock_page, mock_section, plugin, mock_nav, mock_config, temp_dir
     ):
         """Test ignore patterns with relative paths."""
         ignore_content = """docs/temp/
@@ -297,7 +340,7 @@ test_*.md
         ]
 
         mock_files_list = []
-        for file_path, should_ignore in mock_files_data:
+        for file_path, _should_ignore in mock_files_data:
             mock_file = Mock()
             mock_file.src_uri = file_path
             mock_file.content_string = (
@@ -309,6 +352,10 @@ test_*.md
         mock_files.documentation_pages.return_value = mock_files_list
         mock_files.append = MagicMock()
 
+        # Mock the constructors
+        mock_page.return_value = Mock()
+        mock_section.return_value = Mock()
+
         plugin.on_nav(mock_nav, config=mock_config, files=mock_files)
 
         # Should process 2 files (the non-ignored ones)
@@ -318,7 +365,14 @@ test_*.md
         assert mock_files.append.call_count == expected_processed + 1  # + 1 for index
 
     def test_ignore_functionality_empty_patterns(
-        self, plugin, mock_nav, mock_config, sample_files, temp_dir
+        self,
+        mock_page,
+        mock_section,
+        plugin,
+        mock_nav,
+        mock_config,
+        sample_files,
+        temp_dir,
     ):
         """Test behavior with empty ignore patterns."""
         ignore_content = """
@@ -334,6 +388,10 @@ test_*.md
         mock_files = MagicMock()
         mock_files.documentation_pages.return_value = list(sample_files.values())
         mock_files.append = MagicMock()
+
+        # Mock the constructors
+        mock_page.return_value = Mock()
+        mock_section.return_value = Mock()
 
         plugin.on_nav(mock_nav, config=mock_config, files=mock_files)
 

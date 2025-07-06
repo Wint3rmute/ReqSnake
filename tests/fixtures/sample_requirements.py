@@ -1,5 +1,7 @@
 """Sample requirement data for testing."""
 
+from pathlib import Path
+
 from mkdocs_reqsnake.models import ParsedRequirement, Requirement
 
 
@@ -36,7 +38,7 @@ def create_sample_parsed_requirement(
         completed=completed,
         parents=parents,
     )
-    return ParsedRequirement(requirement=requirement, source_file=source_file)
+    return ParsedRequirement(requirement=requirement, source_file=Path(source_file))
 
 
 # Common test data sets

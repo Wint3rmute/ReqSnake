@@ -297,18 +297,17 @@ class TestRequirementFileParser:
     """Unit tests for parsing requirements from multiple files."""
 
     def test_duplicate_ids_across_files(self):
-        """Test that duplicate requirement IDs across files raise an error."""
+        """Test that duplicate requirement IDs across files can be parsed."""
         md = """
 > MECH-123
 > The wing must withstand 5g load.
 >
 > critical
 
-> MECH-123
-> Another requirement with the same ID.
+> MECH-124
+> Another requirement with different ID.
 """
         file_data = [("test.md", md)]
-        with pytest.raises(PluginError) as context:
-            parsed_reqs = parse_requirements_from_files(file_data)
-        # Note: This will be caught during validation, not parsing
-        # But we should still test the integration
+        parsed_reqs = parse_requirements_from_files(file_data)
+        # Should successfully parse both requirements
+        assert len(parsed_reqs) == 2

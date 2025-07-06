@@ -5,6 +5,7 @@ from pathlib import Path
 from mkdocs.config import config_options
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.plugins import BasePlugin, get_plugin_logger
+from mkdocs.structure import StructureItem
 from mkdocs.structure.files import File, Files, InclusionLevel
 from mkdocs.structure.nav import Navigation, Section
 from mkdocs.structure.pages import Page
@@ -107,7 +108,7 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
         logger.info(f"Generated {len(parsed_requirements)} requirement pages and index")
 
         # Group requirement files by category for navigation
-        categories = {}
+        categories: dict[str, list[File]] = {}
         for req_file in generated_files:
             # Extract category from path: reqsnake/REQ-CORE/REQ-CORE-1.md -> REQ-CORE
             path_parts = req_file.src_uri.split("/")
@@ -118,7 +119,7 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
                 categories[category].append(req_file)
 
         # Create the main Requirements section
-        requirements_children = []
+        requirements_children: list[StructureItem] = []
 
         # Add the index page first
         requirements_index = Page("Overview", index_file, config)
@@ -126,7 +127,7 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
 
         # Add category subsections
         for category, cat_files in sorted(categories.items()):
-            category_children = []
+            category_children: list[StructureItem] = []
 
             # Sort files by requirement ID for consistent ordering
             sorted_files = sorted(cat_files, key=lambda f: f.src_uri.split("/")[-1])
@@ -148,7 +149,8 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
         nav.items.append(requirements_section)
 
         logger.info(
-            f"Injected ReqSnake navigation with {len(categories)} categories and {len(generated_files)} pages"
+            f"Injected ReqSnake navigation with {len(categories)} categories "
+            f"and {len(generated_files)} pages"
         )
 
         return nav

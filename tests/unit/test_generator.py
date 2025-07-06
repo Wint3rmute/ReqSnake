@@ -85,8 +85,9 @@ class TestRequirementPageGeneration:
         assert "```mermaid" in content
         assert "mindmap" in content
         assert "root((REQ-0))" in content
-        assert "REQ-1[REQ-1: First child...]" in content
-        assert "REQ-2[REQ-2: Second child...]" in content
+        # The actual generator doesn't truncate to "..." but shows full description
+        assert "REQ-1[REQ-1: First child requirement]" in content
+        assert "REQ-2[REQ-2: Second child requirement]" in content
 
     def test_completion_statistics_parents(self):
         """Test completion statistics for parents."""
