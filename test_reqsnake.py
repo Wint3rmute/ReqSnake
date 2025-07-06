@@ -12,7 +12,7 @@ from mkdocs_reqsnake.parser import (
     parse_requirements_from_files,
 )
 from mkdocs_reqsnake.validator import validate_requirements
-from mkdocs_reqsnake.utils import progress_bar, load_ignore_patterns, should_ignore_file
+from mkdocs_reqsnake.utils import load_ignore_patterns, should_ignore_file
 from pathlib import Path
 import subprocess
 import sys
@@ -403,47 +403,6 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
         self.assertEqual(reqs[0].req_id, "REQ-1")
         self.assertEqual(reqs[0].description, "Description")
         self.assertTrue(reqs[0].critical)
-
-
-class TestProgressBar(unittest.TestCase):
-    """Unit tests for the progress bar utility function."""
-
-    def test_zero_total(self) -> None:
-        """Test progress bar with zero total."""
-        result = progress_bar(0, 0)
-        self.assertEqual(result, "`[" + (" " * 20) + "]`")
-
-    def test_zero_completed(self) -> None:
-        """Test progress bar with zero completed."""
-        result = progress_bar(0, 10)
-        self.assertEqual(result, "`[" + (" " * 20) + "]`")
-
-    def test_full_completed(self) -> None:
-        """Test progress bar with full completion."""
-        result = progress_bar(10, 10)
-        self.assertEqual(result, "`[" + ("█" * 20) + "]`")
-
-    def test_half_completed(self) -> None:
-        """Test progress bar with half completion."""
-        result = progress_bar(5, 10)
-        self.assertEqual(result, "`[" + ("█" * 10) + (" " * 10) + "]`")
-
-    def test_partial_block(self) -> None:
-        """Test progress bar with partial blocks."""
-        # Accept any partial block character
-        result = progress_bar(1, 8)  # 1/8 = 0.125, should be 2.5 blocks
-        partial_blocks = ["▏", "▎", "▍", "▌", "▋", "▊", "▉"]
-        self.assertTrue(any(b in result for b in partial_blocks))
-
-    def test_width_one(self) -> None:
-        """Test progress bar with width of 1."""
-        result = progress_bar(1, 2, width=1)
-        self.assertEqual(result, "`[█]`")
-
-    def test_overflow(self) -> None:
-        """Test progress bar with overflow values."""
-        result = progress_bar(15, 10)  # More completed than total
-        self.assertEqual(result, "`[" + ("█" * 20) + "]`")
 
 
 class TestIgnoreFunctionality(unittest.TestCase):
