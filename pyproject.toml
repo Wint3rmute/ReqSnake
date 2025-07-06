@@ -70,19 +70,15 @@ select = [
     "SIM",
     # isort
     "I",
-    # # bandit
-    # "S",
     # # Mccabe
     # "C90",
     # # Perflint
     # "PERF",
     # Pyflakes
-    # "F",
-    # PyLint
-    # "PL",
-    # pydocstyle
+    "F",
     # Ruff-specific lints
-    # "RUF"
+    "RUF",
+    # pydocstyle
     "D",
     # pydoclint
     "DOC"
