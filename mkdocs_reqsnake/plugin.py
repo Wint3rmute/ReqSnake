@@ -1,7 +1,6 @@
 """MkDocs plugin for ReqSnake requirements management integration."""
 
 from pathlib import Path
-from typing import Optional
 
 from mkdocs.config import config_options
 from mkdocs.config.defaults import MkDocsConfig
@@ -24,7 +23,7 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
 
     config_scheme = (("enabled", config_options.Type(bool, default=True)),)
 
-    def on_files(self, files: Files, /, *, config: MkDocsConfig) -> Optional[Files]:
+    def on_files(self, files: Files, /, *, config: MkDocsConfig) -> Files | None:
         """Generate requirements pages and index for MkDocs site."""
         if not self.config.get("enabled", True):
             return files

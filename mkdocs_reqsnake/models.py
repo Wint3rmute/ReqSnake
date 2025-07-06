@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -21,11 +21,11 @@ class Requirement:
     req_id: str
     description: str
     critical: bool = False
-    parents: List[str] = field(default_factory=list)
+    parents: list[str] = field(default_factory=list)
     completed: bool = False
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "Requirement":
+    def from_dict(data: dict[str, Any]) -> "Requirement":
         """Create a Requirement from a dictionary."""
         return Requirement(
             req_id=data["req_id"],
@@ -37,7 +37,7 @@ class Requirement:
             completed=data.get("completed", False),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert requirement to dictionary."""
         return {
             "req_id": self.req_id,

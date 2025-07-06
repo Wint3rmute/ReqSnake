@@ -1,12 +1,11 @@
 """Content generation logic for ReqSnake."""
 
-from typing import Dict, List
 
 from .models import ParsedRequirement
 
 
 def generate_requirement_page_content(
-    parsed_req: ParsedRequirement, all_requirements: List[ParsedRequirement]
+    parsed_req: ParsedRequirement, all_requirements: list[ParsedRequirement]
 ) -> str:
     """Generate Markdown content for a single requirement page.
 
@@ -171,7 +170,7 @@ def generate_requirement_page_content(
 
 
 def generate_requirement_index_content(
-    parsed_requirements: List[ParsedRequirement],
+    parsed_requirements: list[ParsedRequirement],
 ) -> str:
     """Generate Markdown content for the requirements index page.
 
@@ -198,7 +197,7 @@ def generate_requirement_index_content(
     lines.append("")
 
     # Group by requirement category (e.g., REQ-CORE, REQ-PARSER, REQ-TEST)
-    category_groups: Dict[str, List[ParsedRequirement]] = {}
+    category_groups: dict[str, list[ParsedRequirement]] = {}
     for pr in parsed_requirements:
         req_id = pr.requirement.req_id
         # Extract category from requirement ID (everything before the last dash)

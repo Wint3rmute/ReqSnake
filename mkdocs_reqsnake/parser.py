@@ -2,7 +2,6 @@
 
 import re
 from pathlib import Path
-from typing import List, Set, Tuple
 
 from mkdocs.exceptions import PluginError
 
@@ -16,7 +15,7 @@ BLOCKQUOTE_PATTERN = re.compile(
 )
 
 
-def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
+def parse_requirements_from_markdown(md_text: str) -> list[Requirement]:
     """Parse requirements from Markdown text using block-quote syntax.
 
     Args:
@@ -34,7 +33,7 @@ def parse_requirements_from_markdown(md_text: str) -> List[Requirement]:
     # Remove HTML comments (REQ-PARSER-17)
     md_text = re.sub(r"<!--.*?-->", "", md_text, flags=re.DOTALL)
 
-    requirements: List[Requirement] = []
+    requirements: list[Requirement] = []
 
     for block in BLOCKQUOTE_PATTERN.findall(md_text):
         try:
@@ -83,8 +82,8 @@ def _parse_single_requirement_block(block: str) -> Requirement | None:
     description = lines[1]
     critical = False
     completed = False
-    parents: List[str] = []
-    seen_parents: Set[str] = set()
+    parents: list[str] = []
+    seen_parents: set[str] = set()
 
     # Process attributes
     for line in lines[2:]:
@@ -122,11 +121,11 @@ def _validate_requirement_id(req_id: str) -> None:
 def _process_attribute_line(
     line: str,
     req_id: str,
-    seen_parents: Set[str],
-    parents: List[str],
+    seen_parents: set[str],
+    parents: list[str],
     critical: bool,
     completed: bool,
-) -> Tuple[bool, bool]:
+) -> tuple[bool, bool]:
     """Process a single attribute line.
 
     Args:
@@ -159,7 +158,7 @@ def _process_attribute_line(
 
 
 def _process_child_of_line(
-    line: str, req_id: str, seen_parents: Set[str], parents: List[str]
+    line: str, req_id: str, seen_parents: set[str], parents: list[str]
 ) -> None:
     """Process a child-of attribute line.
 
@@ -190,8 +189,8 @@ def _process_child_of_line(
 
 
 def parse_requirements_from_files(
-    file_data: List[Tuple[str, str]],
-) -> List[ParsedRequirement]:
+    file_data: list[tuple[str, str]],
+) -> list[ParsedRequirement]:
     """Parse requirements from a list of (file_path, content) tuples.
 
     Args:
@@ -204,7 +203,7 @@ def parse_requirements_from_files(
         ParseError: If parsing fails.
 
     """
-    all_parsed_reqs: List[ParsedRequirement] = []
+    all_parsed_reqs: list[ParsedRequirement] = []
 
     for file_path, content in file_data:
         try:

@@ -1,7 +1,6 @@
 """Requirements validation logic for ReqSnake."""
 
 from pathlib import Path
-from typing import Dict, List, Set
 
 from .exceptions import (
     CircularDependencyError,
@@ -11,7 +10,7 @@ from .exceptions import (
 from .models import ParsedRequirement, Requirement
 
 
-def validate_requirements(parsed_requirements: List[ParsedRequirement]) -> None:
+def validate_requirements(parsed_requirements: list[ParsedRequirement]) -> None:
     """Run all validation checks on parsed requirements.
 
     Args:
@@ -33,7 +32,7 @@ def validate_requirements(parsed_requirements: List[ParsedRequirement]) -> None:
     validate_completed_children(requirements)
 
 
-def validate_no_duplicate_ids(parsed_requirements: List[ParsedRequirement]) -> None:
+def validate_no_duplicate_ids(parsed_requirements: list[ParsedRequirement]) -> None:
     """Validate that no duplicate requirement IDs exist across files.
 
     Args:
@@ -43,7 +42,7 @@ def validate_no_duplicate_ids(parsed_requirements: List[ParsedRequirement]) -> N
         DuplicateRequirementError: If duplicate requirement IDs are found.
 
     """
-    seen_ids: Dict[str, Path] = {}
+    seen_ids: dict[str, Path] = {}
 
     for parsed_req in parsed_requirements:
         req_id = parsed_req.requirement.req_id
@@ -58,7 +57,7 @@ def validate_no_duplicate_ids(parsed_requirements: List[ParsedRequirement]) -> N
         seen_ids[req_id] = source_file
 
 
-def validate_no_cycles(requirements: List[Requirement]) -> None:
+def validate_no_cycles(requirements: list[Requirement]) -> None:
     """Validate that no circular dependencies exist in the requirements graph.
 
     Args:
@@ -70,7 +69,7 @@ def validate_no_cycles(requirements: List[Requirement]) -> None:
     """
     # Build adjacency list: parent_id -> [child_id1, child_id2, ...]
     # This represents the dependency tree structure
-    adj: Dict[str, List[str]] = {}
+    adj: dict[str, list[str]] = {}
     for req in requirements:
         # Initialize empty list for each requirement
         if req.req_id not in adj:
@@ -81,10 +80,10 @@ def validate_no_cycles(requirements: List[Requirement]) -> None:
                 adj[parent_id] = []
             adj[parent_id].append(req.req_id)
 
-    visiting: Set[str] = set()  # For the current traversal path
-    visited: Set[str] = set()  # For all nodes ever visited
+    visiting: set[str] = set()  # For the current traversal path
+    visited: set[str] = set()  # For all nodes ever visited
 
-    def visit(req_id: str, path: List[str]) -> None:
+    def visit(req_id: str, path: list[str]) -> None:
         visiting.add(req_id)
         path.append(req_id)
 
@@ -106,7 +105,7 @@ def validate_no_cycles(requirements: List[Requirement]) -> None:
             visit(req.req_id, [])
 
 
-def validate_completed_children(requirements: List[Requirement]) -> None:
+def validate_completed_children(requirements: list[Requirement]) -> None:
     """Validate that completed requirements don't have incomplete children.
 
     Args:
@@ -119,7 +118,7 @@ def validate_completed_children(requirements: List[Requirement]) -> None:
     req_dict = {r.req_id: r for r in requirements}
 
     # Build parent -> children mapping
-    children_map: Dict[str, List[str]] = {}
+    children_map: dict[str, list[str]] = {}
     for req in requirements:
         # Initialize empty list for each requirement
         if req.req_id not in children_map:
@@ -130,7 +129,7 @@ def validate_completed_children(requirements: List[Requirement]) -> None:
                 children_map[parent_id] = []
             children_map[parent_id].append(req.req_id)
 
-    errors: List[tuple[str, str]] = []
+    errors: list[tuple[str, str]] = []
 
     for req in requirements:
         if req.completed:

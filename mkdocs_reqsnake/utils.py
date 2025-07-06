@@ -2,10 +2,9 @@
 
 import fnmatch
 from pathlib import Path
-from typing import List
 
 
-def load_ignore_patterns(config_dir: Path) -> List[str]:
+def load_ignore_patterns(config_dir: Path) -> list[str]:
     """Load ignore patterns from .requirementsignore file.
 
     Args:
@@ -33,7 +32,7 @@ def load_ignore_patterns(config_dir: Path) -> List[str]:
         return []
 
 
-def should_ignore_file(file_path: str, ignore_patterns: List[str]) -> bool:
+def should_ignore_file(file_path: str, ignore_patterns: list[str]) -> bool:
     """Check if a file should be ignored based on ignore patterns.
 
     Args:
