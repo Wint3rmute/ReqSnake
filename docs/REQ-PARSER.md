@@ -58,11 +58,11 @@ Todo: this should be changed to raise errors instead?
 
 > REQ-PARSER-13
 > The parser shall ignore Markdown formatting inside blockquotes.
-> child-of: PARSER-1
+> child-of: REQ-PARSER-1
 
 > REQ-PARSER-14
 > The parser shall ignore blockquotes that span multiple paragraphs (i.e., with blank lines in between).
-> child-of: PARSER-1
+> child-of: REQ-PARSER-1
 
 > REQ-PARSER-15
 > The parser shall raise an error if a circular child relationship is detected.
@@ -73,7 +73,7 @@ Todo: this should be changed to raise errors instead?
 > child-of: REQ-CORE-1
 
 > REQ-PARSER-17
-> The parser shall ignore blockquotes that are commented out in Markdown (e.g., inside <!-- ... -->).
+> The parser shall ignore blockquotes that are commented out in Markdown comment blocks.
 > child-of: REQ-CORE-1
 
 > REQ-PARSER-18

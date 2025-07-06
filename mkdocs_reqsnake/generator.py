@@ -69,7 +69,7 @@ def generate_requirement_page_content(
             child_desc = _get_requirement_by_id(child_id)
             if child_desc:
                 # Truncate description for mindmap display
-                truncated_desc = _truncate_description(child_desc, max_words=5)
+                truncated_desc = _truncate_description(child_desc, max_words=7)
                 lines.append(f"    {child_id}[{child_id}: {truncated_desc}]")
             else:
                 lines.append(f"    {child_id}")
