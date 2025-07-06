@@ -1,6 +1,5 @@
 """Content generation logic for ReqSnake."""
 
-
 from .models import ParsedRequirement
 
 
@@ -201,10 +200,7 @@ def generate_requirement_index_content(
     for pr in parsed_requirements:
         req_id = pr.requirement.req_id
         # Extract category from requirement ID (everything before the last dash)
-        if "-" in req_id:
-            category = req_id.rsplit("-", 1)[0]  # e.g., "REQ-CORE-1" -> "REQ-CORE"
-        else:
-            category = "OTHER"  # Fallback for non-standard IDs
+        category = req_id.rsplit("-", 1)[0] if "-" in req_id else "OTHER"
 
         if category not in category_groups:
             category_groups[category] = []
