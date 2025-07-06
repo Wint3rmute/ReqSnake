@@ -15,7 +15,6 @@ from .generator import (
     generate_requirement_page_content,
     generate_requirement_index_content,
 )
-from .exceptions import ReqSnakeError
 from .utils import load_ignore_patterns, should_ignore_file
 
 logger = get_plugin_logger(__name__)
@@ -63,60 +62,48 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
             logger.info("No documentation files found to parse for requirements")
             return files
 
-        try:
-            # Parse requirements from all files
-            parsed_requirements = parse_requirements_from_files(file_data)
+        # Parse requirements from all files
+        parsed_requirements = parse_requirements_from_files(file_data)
 
-            # Validate all requirements
-            validate_requirements(parsed_requirements)
+        # Validate all requirements
+        validate_requirements(parsed_requirements)
 
-            logger.info(
-                f"Found {len(parsed_requirements)} requirements across {len(file_data)} files"
-            )
+        logger.info(
+            f"Found {len(parsed_requirements)} requirements across {len(file_data)} files"
+        )
 
-            # Generate individual requirement pages
-            for parsed_req in parsed_requirements:
-                req = parsed_req.requirement
-                content = generate_requirement_page_content(
-                    parsed_req, parsed_requirements
-                )
+        # Generate individual requirement pages
+        for parsed_req in parsed_requirements:
+            req = parsed_req.requirement
+            content = generate_requirement_page_content(parsed_req, parsed_requirements)
 
-                # Extract category from requirement ID for directory structure
-                req_id = req.req_id
-                if "-" in req_id:
-                    category = req_id.rsplit("-", 1)[
-                        0
-                    ]  # e.g., "REQ-CORE-1" -> "REQ-CORE"
-                else:
-                    category = "OTHER"  # Fallback for non-standard IDs
+            # Extract category from requirement ID for directory structure
+            req_id = req.req_id
+            if "-" in req_id:
+                category = req_id.rsplit("-", 1)[0]  # e.g., "REQ-CORE-1" -> "REQ-CORE"
+            else:
+                category = "OTHER"  # Fallback for non-standard IDs
 
-                files.append(
-                    File.generated(
-                        config,
-                        src_uri=f"reqsnake/{category}/{req.req_id}.md",
-                        content=content,
-                        inclusion=InclusionLevel.INCLUDED,
-                    )
-                )
-
-            # Generate index page
-            index_content = generate_requirement_index_content(parsed_requirements)
             files.append(
                 File.generated(
                     config,
-                    src_uri="reqsnake/index.md",
-                    content=index_content,
+                    src_uri=f"reqsnake/{category}/{req.req_id}.md",
+                    content=content,
                     inclusion=InclusionLevel.INCLUDED,
                 )
             )
 
-            logger.info(
-                f"Generated {len(parsed_requirements)} requirement pages and index"
+        # Generate index page
+        index_content = generate_requirement_index_content(parsed_requirements)
+        files.append(
+            File.generated(
+                config,
+                src_uri="reqsnake/index.md",
+                content=index_content,
+                inclusion=InclusionLevel.INCLUDED,
             )
+        )
 
-        except ReqSnakeError as e:
-            logger.error(f"Error parsing requirements: {e}")
-            # Don't fail the build, just log the error
-            return files
+        logger.info(f"Generated {len(parsed_requirements)} requirement pages and index")
 
         return files

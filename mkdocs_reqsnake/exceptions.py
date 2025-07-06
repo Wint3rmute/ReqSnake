@@ -1,7 +1,9 @@
 """Custom exceptions for ReqSnake."""
 
+from mkdocs.exceptions import PluginError
 
-class ReqSnakeError(ValueError):
+
+class ReqSnakeError(PluginError):
     """Base exception for all ReqSnake errors."""
 
     pass

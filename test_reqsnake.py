@@ -117,7 +117,7 @@ Some text.
 > Another requirement with the same ID.
 """
         file_data = [("test.md", md)]
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(PluginError) as context:
             parsed_reqs = parse_requirements_from_files(file_data)
             validate_requirements(parsed_reqs)
         self.assertIn(
@@ -164,24 +164,24 @@ Moar text!
         """REQ-PARSER-99: The parser shall raise errors on duplicated 'child-of' lines per requirement (case-insensitive, whitespace-insensitive)."""
         # Duplicate via 'child-of' (exact)
         md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n> child-of: REQ-2\n"
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(PluginError) as ctx:
             parse_requirements_from_markdown(md)
         self.assertIn("Duplicate parent ID", str(ctx.exception))
         # Duplicate across 'child-of' forms (case-insensitive)
         md2 = "> REQ-1\n> Parent.\n> child-of REQ-2\n> child-of: req-2\n"
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(PluginError) as ctx:
             parse_requirements_from_markdown(md2)
         self.assertIn("Duplicate parent ID", str(ctx.exception))
         # Duplicate with whitespace differences
         md3 = "> REQ-1\n> Parent.\n> child-of:   REQ-2   \n> child-of: REQ-2\n"
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(PluginError) as ctx:
             parse_requirements_from_markdown(md3)
         self.assertIn("Duplicate parent ID", str(ctx.exception))
 
     def test_multiple_child_lines_and_duplicates(self) -> None:
         """REQ-PARSER-9/99: Multiple 'child-of' lines are allowed, but duplicates must raise an error."""
         md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-2\n> child-of: REQ-3"
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(PluginError) as ctx:
             parse_requirements_from_markdown(md)
         self.assertIn("Duplicate parent ID 'REQ-2'", str(ctx.exception))
 
@@ -204,7 +204,7 @@ Moar text!
             "> 1REQ-1\n> Invalid.\n",  # starts with number
         ]
         for md in invalid_cases:
-            with self.assertRaises(ValueError, msg=md):
+            with self.assertRaises(PluginError, msg=md):
                 parse_requirements_from_markdown(md)
 
     def test_ascii_only_ids(self) -> None:
@@ -219,7 +219,7 @@ Moar text!
             "> REQ-1\n> Valid.\n\n> SW-33\n> Valid.\n\n> RÉQ-2\n> Invalid.\n",  # mixed
         ]
         for invalid_md in invalid_cases:
-            with self.assertRaises(ValueError) as ctx:
+            with self.assertRaises(PluginError) as ctx:
                 parse_requirements_from_markdown(invalid_md)
             self.assertIn("contains non-ASCII characters", str(ctx.exception))
 
@@ -236,7 +236,7 @@ Moar text!
         md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
         file_data = [("test.md", md)]
         parsed_reqs = parse_requirements_from_files(file_data)
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(PluginError) as ctx:
             validate_requirements(parsed_reqs)
         self.assertIn("Circular dependency detected", str(ctx.exception))
 
@@ -245,7 +245,7 @@ Moar text!
         md = "> REQ-1\n> Parent.\n> completed\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
         file_data = [("test.md", md)]
         parsed_reqs = parse_requirements_from_files(file_data)
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(PluginError) as ctx:
             validate_requirements(parsed_reqs)
         self.assertIn(
             "are marked as completed but have incomplete children", str(ctx.exception)
@@ -385,7 +385,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
         md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
         file_data = [("test.md", md)]
         parsed_reqs = parse_requirements_from_files(file_data)
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(PluginError) as ctx:
             validate_requirements(parsed_reqs)
         self.assertIn("Circular dependency detected", str(ctx.exception))
 
