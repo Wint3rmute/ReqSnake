@@ -10,17 +10,17 @@
 
 > REQ-PARSER-4
 > The parser shall ignore non-blockquote content in Markdown files.
-> child-of: REQ-CORE-1
+> child-of: REQ-PARSER-1
 
 > REQ-PARSER-5
 > The parser shall be dependency-free and use only the Python standard library.
-> child-of: REQ-CORE-1
+> child-of: REQ-PARSER-1
 
 Todo: this should be changed to raise errors instead?
 
 > REQ-PARSER-6
 > The parser shall handle blockquotes with only an ID or only a description by ignoring them.
-> child-of: REQ-CORE-1
+> child-of: REQ-PARSER-1
 
 > REQ-PARSER-7
 > The parser shall ignore extra blank lines or whitespace within blockquotes.
@@ -40,7 +40,7 @@ Todo: this should be changed to raise errors instead?
 
 > REQ-PARSER-11
 > The parser shall treat requirement IDs as case-sensitive and not allow IDs with only case differences.
-> child-of: REQ-CORE-2
+> child-of: REQ-PARSER-1
 
 > REQ-PARSER-12
 > The parser shall handle blockquotes with inconsistent use of '>' by only considering lines that start with '>'.
@@ -48,11 +48,11 @@ Todo: this should be changed to raise errors instead?
 
 > REQ-PARSER-13
 > The parser shall ignore Markdown formatting inside blockquotes.
-> child-of: REQ-CORE-1
+> child-of: PARSER-1
 
 > REQ-PARSER-14
 > The parser shall ignore blockquotes that span multiple paragraphs (i.e., with blank lines in between).
-> child-of: REQ-CORE-1
+> child-of: PARSER-1
 
 > REQ-PARSER-15
 > The parser shall raise an error if a circular child relationship is detected.
