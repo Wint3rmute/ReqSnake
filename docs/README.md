@@ -53,3 +53,9 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 > critical
 >
 > child-of: REQ-CORE-0
+
+> REQ-CORE-8
+>
+> The tool shall raise errors when attempting to link a requirement to a non-existing parent
+>
+> child-of: REQ-CORE-5

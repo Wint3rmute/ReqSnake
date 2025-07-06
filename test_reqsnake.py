@@ -248,6 +248,45 @@ Moar text!
             validate_requirements(parsed_reqs)
         self.assertIn("Circular dependency detected", str(ctx.exception))
 
+    def test_missing_parent_validation(self) -> None:
+        """REQ-CORE-8: Missing parent references should raise MissingParentError."""
+        md = (
+            "> REQ-1\n> Child requirement.\n> child-of: REQ-MISSING\n\n"
+            "> REQ-2\n> Another requirement.\n"
+        )
+        file_data = [("test.md", md)]
+        parsed_reqs = parse_requirements_from_files(file_data)
+        with self.assertRaises(PluginError) as ctx:
+            validate_requirements(parsed_reqs)
+        self.assertIn(
+            "references non-existing parent 'REQ-MISSING'", str(ctx.exception)
+        )
+
+    def test_multiple_missing_parents_validation(self) -> None:
+        """REQ-CORE-8: Multiple missing parents should be caught."""
+        md = (
+            "> REQ-1\n> Child requirement.\n> child-of: REQ-MISSING1\n"
+            "> child-of: REQ-MISSING2\n\n"
+            "> REQ-2\n> Another requirement.\n"
+        )
+        file_data = [("test.md", md)]
+        parsed_reqs = parse_requirements_from_files(file_data)
+        with self.assertRaises(PluginError) as ctx:
+            validate_requirements(parsed_reqs)
+        # Should catch the first missing parent
+        self.assertIn("references non-existing parent", str(ctx.exception))
+
+    def test_valid_parent_references_pass(self) -> None:
+        """REQ-CORE-8: Valid parent references should not raise errors."""
+        md = (
+            "> REQ-1\n> Parent requirement.\n\n"
+            "> REQ-2\n> Child requirement.\n> child-of: REQ-1\n"
+        )
+        file_data = [("test.md", md)]
+        parsed_reqs = parse_requirements_from_files(file_data)
+        # Should not raise an exception
+        validate_requirements(parsed_reqs)
+
     def test_completed_parent_with_incomplete_child_fails(self) -> None:
         """REQ-CORE-7: Completed requirements with incomplete children raise error."""
         md = "> REQ-1\n> Parent.\n> completed\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"

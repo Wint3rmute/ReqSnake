@@ -26,4 +26,4 @@
 >
 > ReqSnake shall provide logging according to MkDocs best practices.
 >
-> child-of: INTEGRATION-1
+> child-of: REQ-INTEGRATION-1

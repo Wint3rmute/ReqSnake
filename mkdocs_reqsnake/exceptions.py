@@ -39,6 +39,12 @@ class CompletionValidationError(ValidationError):
     pass
 
 
+class MissingParentError(ValidationError):
+    """Raised when a requirement references a non-existing parent."""
+
+    pass
+
+
 class InvalidRequirementIdError(ParseError):
     """Raised when a requirement ID doesn't match the required format."""
 

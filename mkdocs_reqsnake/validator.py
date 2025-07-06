@@ -6,6 +6,7 @@ from .exceptions import (
     CircularDependencyError,
     CompletionValidationError,
     DuplicateRequirementError,
+    MissingParentError,
 )
 from .models import ParsedRequirement, Requirement
 
@@ -28,6 +29,7 @@ def validate_requirements(parsed_requirements: list[ParsedRequirement]) -> None:
 
     # Run all validations
     validate_no_duplicate_ids(parsed_requirements)
+    validate_parent_existence(requirements)
     validate_no_cycles(requirements)
     validate_completed_children(requirements)
 
@@ -55,6 +57,29 @@ def validate_no_duplicate_ids(parsed_requirements: list[ParsedRequirement]) -> N
                 f"First defined in '{first_file}'."
             )
         seen_ids[req_id] = source_file
+
+
+def validate_parent_existence(requirements: list[Requirement]) -> None:
+    """Validate that all referenced parents exist in the requirements list.
+
+    Args:
+        requirements: List of Requirement objects to validate.
+
+    Raises:
+        MissingParentError: If a requirement references a non-existing parent.
+
+    """
+    # Build set of all existing requirement IDs for fast lookup
+    existing_ids = {req.req_id for req in requirements}
+
+    # Check each requirement's parents
+    for req in requirements:
+        for parent_id in req.parents:
+            if parent_id not in existing_ids:
+                raise MissingParentError(
+                    f"Requirement '{req.req_id}' references non-existing parent "
+                    f"'{parent_id}'"
+                )
 
 
 def validate_no_cycles(requirements: list[Requirement]) -> None:

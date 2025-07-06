@@ -33,12 +33,6 @@ def generate_requirement_page_content(
                 return other_req.requirement.description
         return ""
 
-    def _requirement_exists(req_id: str) -> bool:
-        """Check if a requirement exists in the parsed requirements."""
-        return any(
-            other_req.requirement.req_id == req_id for other_req in all_requirements
-        )
-
     lines = []
     lines.append(f"# {req.req_id}")
     lines.append("")
@@ -85,11 +79,10 @@ def generate_requirement_page_content(
 
     # Add parents if any
     if req.parents:
-        # Calculate parent completion statistics (only for existing parents)
-        existing_parents = [p for p in req.parents if _requirement_exists(p)]
-        parent_total = len(existing_parents)
+        # Calculate parent completion statistics
+        parent_total = len(req.parents)
         parent_completed = 0
-        for parent_id in existing_parents:
+        for parent_id in req.parents:
             for other_req in all_requirements:
                 if (
                     other_req.requirement.req_id == parent_id
@@ -101,35 +94,28 @@ def generate_requirement_page_content(
         lines.append(f"## Parents ({parent_completed}/{parent_total} completed)")
         lines.append("")
         for parent_id in req.parents:
-            if _requirement_exists(parent_id):
-                # Find the parent requirement to get its description
-                parent_desc = _get_requirement_by_id(parent_id)
-                # Extract category for hierarchical path
-                if "-" in parent_id:
-                    parent_category = parent_id.rsplit("-", 1)[0]
-                else:
-                    parent_category = "OTHER"
+            # Find the parent requirement to get its description
+            parent_desc = _get_requirement_by_id(parent_id)
+            # Extract category for hierarchical path
+            parent_category = (
+                parent_id.rsplit("-", 1)[0] if "-" in parent_id else "OTHER"
+            )
 
-                if parent_desc:
-                    lines.append(
-                        f"- [{parent_id}](../{parent_category}/{parent_id}.md) - "
-                        f"{parent_desc}"
-                    )
-                else:
-                    lines.append(
-                        f"- [{parent_id}](../{parent_category}/{parent_id}.md)"
-                    )
+            if parent_desc:
+                lines.append(
+                    f"- [{parent_id}](../{parent_category}/{parent_id}.md) - "
+                    f"{parent_desc}"
+                )
             else:
-                lines.append(f"- {parent_id} (not found)")
+                lines.append(f"- [{parent_id}](../{parent_category}/{parent_id}.md)")
         lines.append("")
 
     # Add children if any
     if children:
-        # Calculate child completion statistics (only for existing children)
-        existing_children = [c for c in children if _requirement_exists(c)]
-        child_total = len(existing_children)
+        # Calculate child completion statistics
+        child_total = len(children)
         child_completed = 0
-        for child_id in existing_children:
+        for child_id in children:
             for other_req in all_requirements:
                 if (
                     other_req.requirement.req_id == child_id
@@ -141,24 +127,17 @@ def generate_requirement_page_content(
         lines.append(f"## Children ({child_completed}/{child_total} completed)")
         lines.append("")
         for child_id in sorted(children):
-            if _requirement_exists(child_id):
-                # Find the child requirement to get its description
-                child_desc = _get_requirement_by_id(child_id)
-                # Extract category for hierarchical path
-                if "-" in child_id:
-                    child_category = child_id.rsplit("-", 1)[0]
-                else:
-                    child_category = "OTHER"
+            # Find the child requirement to get its description
+            child_desc = _get_requirement_by_id(child_id)
+            # Extract category for hierarchical path
+            child_category = child_id.rsplit("-", 1)[0] if "-" in child_id else "OTHER"
 
-                if child_desc:
-                    lines.append(
-                        f"- [{child_id}](../{child_category}/{child_id}.md) - "
-                        f"{child_desc}"
-                    )
-                else:
-                    lines.append(f"- [{child_id}](../{child_category}/{child_id}.md)")
+            if child_desc:
+                lines.append(
+                    f"- [{child_id}](../{child_category}/{child_id}.md) - {child_desc}"
+                )
             else:
-                lines.append(f"- {child_id} (not found)")
+                lines.append(f"- [{child_id}](../{child_category}/{child_id}.md)")
         lines.append("")
 
     # Add source file link
