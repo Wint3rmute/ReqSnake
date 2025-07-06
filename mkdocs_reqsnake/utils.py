@@ -7,37 +7,6 @@ from typing import Dict, List
 from .models import DiffType, Requirement
 
 
-def diff_requirements(
-    old: List[Requirement], new: List[Requirement]
-) -> Dict[DiffType, List[Requirement]]:
-    """Compare two lists of requirements and return a diff dict.
-
-    Args:
-        old: Previous list of requirements.
-        new: Current list of requirements.
-
-    Returns:
-        Dictionary mapping DiffType to list of requirements.
-
-    """
-    old_dict: Dict[str, Requirement] = {r.req_id: r for r in old}
-    new_dict: Dict[str, Requirement] = {r.req_id: r for r in new}
-
-    added: List[Requirement] = [
-        new_dict[rid] for rid in new_dict if rid not in old_dict
-    ]
-    removed: List[Requirement] = [
-        old_dict[rid] for rid in old_dict if rid not in new_dict
-    ]
-    changed: List[Requirement] = [
-        new_dict[rid]
-        for rid in new_dict
-        if rid in old_dict and new_dict[rid] != old_dict[rid]
-    ]
-
-    return {DiffType.ADDED: added, DiffType.REMOVED: removed, DiffType.CHANGED: changed}
-
-
 def load_ignore_patterns(config_dir: Path) -> List[str]:
     """Load ignore patterns from .requirementsignore file.
 
