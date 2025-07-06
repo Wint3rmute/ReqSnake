@@ -16,10 +16,12 @@ ReqSnake is a MkDocs plugin that automatically extracts and displays requirement
 
 ```markdown
 > REQ-ID-123
+>
 > Requirement description here
+>
 > critical
+>
 > child-of: PARENT-REQ-1
-> completed
 ```
 
 ## Development Commands
@@ -30,29 +32,10 @@ ReqSnake is a MkDocs plugin that automatically extracts and displays requirement
 
 # Testing with MkDocs
 mkdocs build
-mkdocs serve
 ```
-
-## Key Features
-
-### Page Generation (`mkdocs_reqsnake/generator.py`)
-
-- **Mermaid diagrams**: Interactive flowcharts with parent-child relationships using `graph LR` layout
-- **Enhanced nodes**: Show requirement ID + first 4 words of description
-- **Color coding**: Parents (blue), current (orange), children (purple) - dark mode compatible
-- **Completion tracking**: Status summaries in all sections (e.g., "Parents (1/3 completed)")
-- **Critical indicators**: Warning appears above description for visibility
-
-### File Filtering (`.requirementsignore`)
-
-- **Gitignore-style patterns**: Support for `*.tmp`, `build/`, `test_*.md` patterns
-- **Automatic discovery**: Loads `.requirementsignore` from project root automatically
-- **Graceful fallback**: Continues processing if ignore file is missing or unreadable
-- **Logging**: Reports number of ignored files during build
 
 ### Implementation Notes
 
 - Always run `./check.sh` before committing
 - Maintain strict typing with mypy
-- Use helper functions `_truncate_description()` and `_get_requirement_by_id()`
-- Clickable navigation uses site-relative paths `/reqsnake/{req_id}`
+- Never do manual testing, always write automated tests

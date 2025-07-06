@@ -2,6 +2,13 @@ site_name: ReqSnake documentation & requirements
 
 strict: true
 
+nav:
+  - Overview: README.md
+  - MkDocs Integration: REQ-INTEGRATION.md
+  - Markdown Parser: REQ-PARSER.md
+  - Output Formats: REQ-OUTPUT.md
+  - Testing: REQ-TEST.md
+
 theme:
   name: material
   palette:
