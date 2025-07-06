@@ -6,7 +6,8 @@ from .models import ParsedRequirement
 def generate_requirement_page_content(
     parsed_req: ParsedRequirement, all_requirements: list[ParsedRequirement]
 ) -> str:
-    """Generate Markdown content for a single requirement page.
+    """
+    Generate Markdown content for a single requirement page.
 
     Args:
         parsed_req: ParsedRequirement object with requirement and source file.
@@ -150,7 +151,8 @@ def generate_requirement_page_content(
 def generate_requirement_index_content(
     parsed_requirements: list[ParsedRequirement],
 ) -> str:
-    """Generate Markdown content for the requirements index page.
+    """
+    Generate Markdown content for the requirements index page.
 
     Args:
         parsed_requirements: List of all ParsedRequirement objects.

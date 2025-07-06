@@ -7,7 +7,8 @@ from typing import Any
 
 @dataclass(frozen=True)
 class Requirement:
-    """Represent a requirement parsed from a Markdown block-quote.
+    """
+    Represent a requirement parsed from a Markdown block-quote.
 
     Attributes:
         req_id: The unique identifier of the requirement.

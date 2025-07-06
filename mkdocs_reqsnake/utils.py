@@ -5,7 +5,8 @@ from pathlib import Path
 
 
 def load_ignore_patterns(config_dir: Path) -> list[str]:
-    """Load ignore patterns from .requirementsignore file.
+    """
+    Load ignore patterns from .requirementsignore file.
 
     Args:
         config_dir: Directory to look for .requirementsignore file.
@@ -37,7 +38,8 @@ def load_ignore_patterns(config_dir: Path) -> list[str]:
 
 
 def should_ignore_file(file_path: str, ignore_patterns: list[str]) -> bool:
-    """Check if a file should be ignored based on ignore patterns.
+    """
+    Check if a file should be ignored based on ignore patterns.
 
     Args:
         file_path: The file path to check.
