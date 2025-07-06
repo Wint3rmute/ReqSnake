@@ -1,9 +1,6 @@
 """Unit tests for utility functions."""
 
-import tempfile
-from pathlib import Path
 
-import pytest
 
 from mkdocs_reqsnake.utils import load_ignore_patterns, should_ignore_file
 

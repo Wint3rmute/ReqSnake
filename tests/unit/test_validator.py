@@ -7,7 +7,6 @@ from mkdocs_reqsnake.parser import parse_requirements_from_files
 from mkdocs_reqsnake.validator import validate_requirements
 from tests.fixtures.sample_requirements import (
     create_sample_parsed_requirement,
-    create_sample_requirement,
 )
 
 

@@ -1,6 +1,6 @@
 """Sample requirement data for testing."""
 
-from mkdocs_reqsnake.models import Requirement, ParsedRequirement
+from mkdocs_reqsnake.models import ParsedRequirement, Requirement
 
 
 def create_sample_requirement(

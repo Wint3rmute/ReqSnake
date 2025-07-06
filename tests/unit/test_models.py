@@ -1,6 +1,5 @@
 """Unit tests for ReqSnake data models."""
 
-import pytest
 
 from mkdocs_reqsnake.models import Requirement
 from tests.fixtures.sample_requirements import create_sample_requirement
