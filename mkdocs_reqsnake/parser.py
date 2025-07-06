@@ -11,7 +11,7 @@ from .models import ParsedRequirement, Requirement
 
 # Regex for blockquotes: matches contiguous blockquote lines
 BLOCKQUOTE_PATTERN = re.compile(
-    r"(^> .*(?:\n>.*)*)",  # Match a block starting with '> ' and all following '> ...' lines
+    r"(^> .*(?:\n>.*)*)",  # Match '> ' block and following '> ...' lines
     re.MULTILINE,
 )
 
@@ -108,12 +108,14 @@ def _validate_requirement_id(req_id: str) -> None:
     # Enforce REQ-CORE-6: ID must be ASCII only, then <STRING>-<NUMBER>
     if not all(ord(c) < 128 for c in req_id):
         raise InvalidRequirementIdError(
-            f"Requirement ID '{req_id}' contains non-ASCII characters, which are not allowed. (REQ-CORE-6)"
+            f"Requirement ID '{req_id}' contains non-ASCII characters, "
+            f"which are not allowed. (REQ-CORE-6)"
         )
 
     if not re.match(r"^[A-Za-z][A-Za-z0-9_-]*-\d+$", req_id):
         raise InvalidRequirementIdError(
-            f"Requirement ID '{req_id}' does not match the required format '<STRING>-<NUMBER>' (REQ-CORE-6)"
+            f"Requirement ID '{req_id}' does not match the required format "
+            f"'<STRING>-<NUMBER>' (REQ-CORE-6)"
         )
 
 
@@ -180,7 +182,8 @@ def _process_child_of_line(
         norm_parent_id = parent_id.upper()
         if norm_parent_id in seen_parents:
             raise ParseError(
-                f"Duplicate parent ID '{parent_id}' in requirement '{req_id}' (case-insensitive, whitespace-insensitive)"
+                f"Duplicate parent ID '{parent_id}' in requirement '{req_id}' "
+                f"(case-insensitive, whitespace-insensitive)"
             )
         seen_parents.add(norm_parent_id)
         parents.append(parent_id)

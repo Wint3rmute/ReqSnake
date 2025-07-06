@@ -114,7 +114,8 @@ def generate_requirement_page_content(
 
                 if parent_desc:
                     lines.append(
-                        f"- [{parent_id}](../{parent_category}/{parent_id}.md) - {parent_desc}"
+                        f"- [{parent_id}](../{parent_category}/{parent_id}.md) - "
+                        f"{parent_desc}"
                     )
                 else:
                     lines.append(
@@ -153,7 +154,8 @@ def generate_requirement_page_content(
 
                 if child_desc:
                     lines.append(
-                        f"- [{child_id}](../{child_category}/{child_id}.md) - {child_desc}"
+                        f"- [{child_id}](../{child_category}/{child_id}.md) - "
+                        f"{child_desc}"
                     )
                 else:
                     lines.append(f"- [{child_id}](../{child_category}/{child_id}.md)")
@@ -190,7 +192,8 @@ def generate_requirement_index_content(
         1 for pr in parsed_requirements if pr.requirement.completed
     )
     lines.append(
-        f"**Overall completion: {completed_requirements}/{total_requirements} requirements**"
+        f"**Overall completion: {completed_requirements}/"
+        f"{total_requirements} requirements**"
     )
     lines.append("")
 
@@ -231,7 +234,8 @@ def generate_requirement_index_content(
             critical_indicator = "⚠️ " if req.critical else ""
 
             lines.append(
-                f"- {status_emoji} {critical_indicator}[{req.req_id}](./{category}/{req.req_id}.md): {req.description}"
+                f"- {status_emoji} {critical_indicator}[{req.req_id}]"
+                f"(./{category}/{req.req_id}.md): {req.description}"
             )
         lines.append("")
 

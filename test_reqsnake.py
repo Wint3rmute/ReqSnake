@@ -21,7 +21,10 @@ class TestRequirementParser(unittest.TestCase):
 
     def test_single_requirement(self) -> None:
         """Test parsing a single requirement with critical and children."""
-        md = "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n> child-of: MECH-54\n> child-of: MECH-57"
+        md = (
+            "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n"
+            "> child-of: MECH-54\n> child-of: MECH-57"
+        )
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
@@ -122,7 +125,10 @@ Some text.
 
     def test_child_of_syntax(self) -> None:
         """Test that 'child-of' is supported as a child relationship key."""
-        md = "> REQ-1\n> Parent requirement.\n> child-of REQ-2\n> child-of: REQ-3\n> CHILD-OF req-5\n> child-of: REQ-6\n"
+        md = (
+            "> REQ-1\n> Parent requirement.\n> child-of REQ-2\n"
+            "> child-of: REQ-3\n> CHILD-OF req-5\n> child-of: REQ-6\n"
+        )
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
@@ -131,7 +137,7 @@ Some text.
         )
 
     def test_normal_blockquote(self) -> None:
-        """Test that markdown blockquotes not containing requirements are skipped and don't cause errors."""
+        """Test markdown blockquotes not containing requirements are skipped."""
         md = """
 # Some markdown content
 
@@ -148,7 +154,10 @@ Moar text!
 
     def test_child_of_whitespace_and_case(self) -> None:
         """Test that 'child-of' is parsed case-insensitively and trims whitespace."""
-        md = "> REQ-1\n> Parent.\n>   CHILD-OF:   REQ-2   \n> child-of   REQ-3\n> child-OF:REQ-4\n"
+        md = (
+            "> REQ-1\n> Parent.\n>   CHILD-OF:   REQ-2   \n"
+            "> child-of   REQ-3\n> child-OF:REQ-4\n"
+        )
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
@@ -157,7 +166,7 @@ Moar text!
         )
 
     def test_duplicate_child_ids_error(self) -> None:
-        """REQ-PARSER-99: The parser shall raise errors on duplicated 'child-of' lines per requirement (case-insensitive, whitespace-insensitive)."""
+        """REQ-PARSER-99: Parser raises errors on duplicated 'child-of' lines."""
         # Duplicate via 'child-of' (exact)
         md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n> child-of: REQ-2\n"
         with self.assertRaises(PluginError) as ctx:
@@ -175,7 +184,7 @@ Moar text!
         self.assertIn("Duplicate parent ID", str(ctx.exception))
 
     def test_multiple_child_lines_and_duplicates(self) -> None:
-        """REQ-PARSER-9/99: Multiple 'child-of' lines are allowed, but duplicates must raise an error."""
+        """REQ-PARSER-9/99: Multiple 'child-of' lines allowed, duplicates error."""
         md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-2\n> child-of: REQ-3"
         with self.assertRaises(PluginError) as ctx:
             parse_requirements_from_markdown(md)
@@ -228,8 +237,11 @@ Moar text!
         self.assertIn("REQ-1", str(ctx.exception))
 
     def test_circular_dependency_detection(self) -> None:
-        """REQ-PARSER-15: Circular dependencies should be detected and raise ValueError."""
-        md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
+        """REQ-PARSER-15: Circular dependencies should be detected."""
+        md = (
+            "> REQ-1\n> Parent.\n> child-of: REQ-2\n\n"
+            "> REQ-2\n> Child.\n> child-of: REQ-1\n"
+        )
         file_data = [("test.md", md)]
         parsed_reqs = parse_requirements_from_files(file_data)
         with self.assertRaises(PluginError) as ctx:
@@ -237,7 +249,7 @@ Moar text!
         self.assertIn("Circular dependency detected", str(ctx.exception))
 
     def test_completed_parent_with_incomplete_child_fails(self) -> None:
-        """REQ-CORE-7: Completed requirements with incomplete children should raise ValueError."""
+        """REQ-CORE-7: Completed requirements with incomplete children raise error."""
         md = "> REQ-1\n> Parent.\n> completed\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
         file_data = [("test.md", md)]
         parsed_reqs = parse_requirements_from_files(file_data)
@@ -248,8 +260,11 @@ Moar text!
         )
 
     def test_completed_parent_with_completed_child_passes(self) -> None:
-        """REQ-CORE-7: Completed requirements with completed children should pass validation."""
-        md = "> REQ-1\n> Parent.\n> completed\n> child-of: REQ-2\n\n> REQ-2\n> Child.\n> completed\n"
+        """REQ-CORE-7: Completed requirements with completed children should pass."""
+        md = (
+            "> REQ-1\n> Parent.\n> completed\n> child-of: REQ-2\n\n"
+            "> REQ-2\n> Child.\n> completed\n"
+        )
         file_data = [("test.md", md)]
         parsed_reqs = parse_requirements_from_files(file_data)
         # Should not raise an exception
@@ -260,7 +275,7 @@ class TestRequirementPrettyString(unittest.TestCase):
     """Unit tests for the requirement pretty string formatting."""
 
     def test_pretty_string_variants(self) -> None:
-        """Test that to_pretty_string() generates correct output for various requirement states."""
+        """Test that to_pretty_string() generates correct output for various states."""
         # Basic requirement
         req = Requirement("REQ-1", "Basic requirement")
         expected = "REQ-1: Basic requirement\n\n"
@@ -289,7 +304,10 @@ class TestRequirementPrettyString(unittest.TestCase):
             completed=True,
             parents=["REQ-8"],
         )
-        expected = "REQ-7: Complete requirement\n\n**⚠️ critical**\n\n✅ completed\n\n### Parents\n\n- REQ-8\n"
+        expected = (
+            "REQ-7: Complete requirement\n\n**⚠️ critical**\n\n"
+            "✅ completed\n\n### Parents\n\n- REQ-8\n"
+        )
         self.assertEqual(req.to_pretty_string(), expected)
 
 
@@ -297,7 +315,7 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
     """Unit tests for edge cases in the requirement parser."""
 
     def test_ignore_blockquotes_with_only_id_or_description(self) -> None:
-        """REQ-PARSER-6: Blockquotes with only an ID or only a description should be ignored."""
+        """REQ-PARSER-6: Blockquotes with only ID or description ignored."""
         md = "> REQ-1\n\n> Just a description\n\n> REQ-2\n> Valid requirement\n"
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
@@ -347,9 +365,9 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
         self.assertEqual(reqs[1].req_id, "req-1")
 
     def test_inconsistent_blockquote_lines(self) -> None:
-        """Test that lines without '>' break blockquote blocks, and invalid attributes raise errors."""
+        """Test lines without '>' break blocks, invalid attributes raise errors."""
         # Lines without '>' break blockquote blocks (REQ-PARSER-12)
-        # This creates two separate blocks: one complete requirement and one invalid block
+        # This creates two separate blocks: one complete requirement and one invalid
         md = "> REQ-1\n> Description\n> critical\nNot a blockquote\n> completed\n"
         reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)  # Only the complete requirement is parsed
@@ -378,7 +396,10 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
 
     def test_circular_child_relationship(self) -> None:
         """Test that circular child relationships are detected."""
-        md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
+        md = (
+            "> REQ-1\n> Parent.\n> child-of: REQ-2\n\n"
+            "> REQ-2\n> Child.\n> child-of: REQ-1\n"
+        )
         file_data = [("test.md", md)]
         parsed_reqs = parse_requirements_from_files(file_data)
         with self.assertRaises(PluginError) as ctx:

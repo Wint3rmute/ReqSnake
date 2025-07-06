@@ -116,7 +116,7 @@ class TestMkDocsPlugin(unittest.TestCase):
         self.assertEqual(mock_files.append.call_count, 2)
 
     def test_on_files_with_complex_requirements(self) -> None:
-        """Test on_files with complex requirements including children and completed status."""
+        """Test on_files with complex requirements including children and status."""
         # Create test markdown content with complex requirements
         test_content = """
 # Documentation
@@ -159,7 +159,7 @@ class TestMkDocsPlugin(unittest.TestCase):
         self.assertEqual(mock_files.append.call_count, 4)  # 3 requirements + 1 index
 
     def test_on_files_with_multiple_documentation_files(self) -> None:
-        """Test on_files with requirements spread across multiple documentation files."""
+        """Test on_files with requirements spread across multiple files."""
         # Create multiple mock files with requirements
         mock_file1 = Mock()
         mock_file1.src_dir = "docs"
@@ -337,7 +337,7 @@ class TestIgnoreIntegration(unittest.TestCase):
         ]
         mock_files.append = MagicMock()
 
-        result = self.plugin.on_files(mock_files, config=self.mock_config)
+        self.plugin.on_files(mock_files, config=self.mock_config)
 
         # All 4 requirements should be processed since no ignore file exists
         self.assertEqual(mock_files.append.call_count, 5)  # 4 req pages + 1 index
@@ -362,7 +362,7 @@ build/
         mock_files.append = MagicMock()
 
         with patch("mkdocs_reqsnake.plugin.logger") as mock_logger:
-            result = self.plugin.on_files(mock_files, config=self.mock_config)
+            self.plugin.on_files(mock_files, config=self.mock_config)
 
             # Only 2 requirements should be processed (REQ-1 and REQ-4)
             self.assertEqual(mock_files.append.call_count, 3)  # 2 req pages + 1 index
@@ -408,7 +408,7 @@ docs/test_*
         mock_files.append = MagicMock()
 
         with patch("mkdocs_reqsnake.plugin.logger") as mock_logger:
-            result = self.plugin.on_files(mock_files, config=self.mock_config)
+            self.plugin.on_files(mock_files, config=self.mock_config)
 
             # Only 2 requirements should be processed
             self.assertEqual(mock_files.append.call_count, 3)  # 2 req pages + 1 index
@@ -423,7 +423,7 @@ docs/test_*
             self.assertIn("Ignored 3 files", str(ignore_calls[0]))
 
     def test_ignore_functionality_with_comments_and_blanks(self) -> None:
-        """Test that comments and blank lines in .requirementsignore are handled correctly."""
+        """Test comments and blank lines in .requirementsignore are handled."""
         ignore_content = """# This is a comment
 # Another comment
 
@@ -445,7 +445,7 @@ build/
         ]
         mock_files.append = MagicMock()
 
-        result = self.plugin.on_files(mock_files, config=self.mock_config)
+        self.plugin.on_files(mock_files, config=self.mock_config)
 
         # Only 2 requirements should be processed
         self.assertEqual(mock_files.append.call_count, 3)  # 2 req pages + 1 index
@@ -466,7 +466,7 @@ build/
 
         try:
             # Should not raise an exception and should process all files
-            result = self.plugin.on_files(mock_files, config=self.mock_config)
+            self.plugin.on_files(mock_files, config=self.mock_config)
 
             # All files should be processed when ignore file can't be read
             self.assertEqual(mock_files.append.call_count, 3)  # 2 req pages + 1 index

@@ -141,7 +141,10 @@ def validate_completed_children(requirements: List[Requirement]) -> None:
                     errors.append((req.req_id, child_id))
 
     if errors:
-        msg = "The following requirements are marked as completed but have incomplete children:\n"
+        msg = (
+            "The following requirements are marked as completed but have "
+            "incomplete children:\n"
+        )
         for parent_id, child_id in errors:
             msg += f"  - {parent_id} (incomplete child: {child_id})\n"
         raise CompletionValidationError(msg)

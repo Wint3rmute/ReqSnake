@@ -48,7 +48,7 @@ class Requirement:
         }
 
     def to_pretty_string(self) -> str:
-        """Return a human-readable, multi-line string representation of the requirement."""
+        """Return a human-readable, multi-line string representation."""
         lines = [f"{self.req_id}: {self.description}\n\n"]
         if self.critical:
             lines.append("**⚠️ critical**\n\n")

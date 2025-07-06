@@ -25,7 +25,7 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
     config_scheme = (("enabled", config_options.Type(bool, default=True)),)
 
     def on_files(self, files: Files, /, *, config: MkDocsConfig) -> Optional[Files]:
-        """Generate requirements pages and index for MkDocs site from Markdown requirements."""
+        """Generate requirements pages and index for MkDocs site."""
         if not self.config.get("enabled", True):
             return files
 
@@ -68,7 +68,8 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
         validate_requirements(parsed_requirements)
 
         logger.info(
-            f"Found {len(parsed_requirements)} requirements across {len(file_data)} files"
+            f"Found {len(parsed_requirements)} requirements across "
+            f"{len(file_data)} files"
         )
 
         # Generate individual requirement pages
