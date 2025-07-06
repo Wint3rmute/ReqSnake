@@ -12,7 +12,7 @@ from mkdocs_reqsnake.parser import (
     parse_requirements_from_files,
 )
 from mkdocs_reqsnake.validator import validate_requirements
-from mkdocs_reqsnake.utils import progress_bar
+from mkdocs_reqsnake.utils import progress_bar, load_ignore_patterns, should_ignore_file
 from pathlib import Path
 import subprocess
 import sys
@@ -444,6 +444,137 @@ class TestProgressBar(unittest.TestCase):
         """Test progress bar with overflow values."""
         result = progress_bar(15, 10)  # More completed than total
         self.assertEqual(result, "`[" + ("█" * 20) + "]`")
+
+
+class TestIgnoreFunctionality(unittest.TestCase):
+    """Unit tests for .requirementsignore functionality."""
+
+    def setUp(self) -> None:
+        """Set up temporary directory for tests."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.temp_path = Path(self.temp_dir)
+
+    def tearDown(self) -> None:
+        """Clean up temporary directory."""
+        shutil.rmtree(self.temp_dir)
+
+    def test_load_ignore_patterns_no_file(self) -> None:
+        """Test load_ignore_patterns when .requirementsignore doesn't exist."""
+        patterns = load_ignore_patterns(self.temp_path)
+        self.assertEqual(patterns, [])
+
+    def test_load_ignore_patterns_empty_file(self) -> None:
+        """Test load_ignore_patterns with empty .requirementsignore file."""
+        ignore_file = self.temp_path / ".requirementsignore"
+        ignore_file.write_text("")
+
+        patterns = load_ignore_patterns(self.temp_path)
+        self.assertEqual(patterns, [])
+
+    def test_load_ignore_patterns_with_content(self) -> None:
+        """Test load_ignore_patterns with various patterns."""
+        ignore_content = """# Comment line
+*.tmp
+*~
+
+build/
+dist/
+example.md
+test_*.md
+"""
+        ignore_file = self.temp_path / ".requirementsignore"
+        ignore_file.write_text(ignore_content)
+
+        patterns = load_ignore_patterns(self.temp_path)
+        expected = ["*.tmp", "*~", "build/", "dist/", "example.md", "test_*.md"]
+        self.assertEqual(patterns, expected)
+
+    def test_load_ignore_patterns_comments_and_blanks(self) -> None:
+        """Test that comments and blank lines are ignored."""
+        ignore_content = """# This is a comment
+*.tmp
+# Another comment
+
+# Empty line above
+build/
+"""
+        ignore_file = self.temp_path / ".requirementsignore"
+        ignore_file.write_text(ignore_content)
+
+        patterns = load_ignore_patterns(self.temp_path)
+        expected = ["*.tmp", "build/"]
+        self.assertEqual(patterns, expected)
+
+    def test_load_ignore_patterns_unicode_error(self) -> None:
+        """Test load_ignore_patterns handles unicode decode errors gracefully."""
+        ignore_file = self.temp_path / ".requirementsignore"
+        # Write binary data that would cause decode error
+        with ignore_file.open("wb") as f:
+            f.write(b"\xff\xfe\x00\x00")
+
+        patterns = load_ignore_patterns(self.temp_path)
+        self.assertEqual(patterns, [])
+
+    def test_should_ignore_file_no_patterns(self) -> None:
+        """Test should_ignore_file with empty patterns list."""
+        self.assertFalse(should_ignore_file("any/file.md", []))
+
+    def test_should_ignore_file_exact_match(self) -> None:
+        """Test should_ignore_file with exact filename matches."""
+        patterns = ["example.md", "README.txt"]
+
+        self.assertTrue(should_ignore_file("example.md", patterns))
+        self.assertTrue(should_ignore_file("path/to/example.md", patterns))
+        self.assertFalse(should_ignore_file("other.md", patterns))
+
+    def test_should_ignore_file_glob_patterns(self) -> None:
+        """Test should_ignore_file with glob patterns."""
+        patterns = ["*.tmp", "test_*.md", ".*"]
+
+        self.assertTrue(should_ignore_file("file.tmp", patterns))
+        self.assertTrue(should_ignore_file("path/file.tmp", patterns))
+        self.assertTrue(should_ignore_file("test_example.md", patterns))
+        self.assertTrue(should_ignore_file("path/test_example.md", patterns))
+        self.assertTrue(should_ignore_file(".hidden", patterns))
+        self.assertFalse(should_ignore_file("normal.md", patterns))
+
+    def test_should_ignore_file_directory_patterns(self) -> None:
+        """Test should_ignore_file with directory patterns."""
+        patterns = ["build/", "node_modules/", "dist/"]
+
+        self.assertTrue(should_ignore_file("build/output.md", patterns))
+        self.assertTrue(should_ignore_file("project/build/file.md", patterns))
+        self.assertTrue(should_ignore_file("node_modules/package/readme.md", patterns))
+        self.assertFalse(should_ignore_file("src/file.md", patterns))
+        self.assertFalse(should_ignore_file("buildfile.md", patterns))
+
+    def test_should_ignore_file_mixed_patterns(self) -> None:
+        """Test should_ignore_file with mixed pattern types."""
+        patterns = ["*.tmp", "build/", "example.md", "test_*"]
+
+        # File patterns
+        self.assertTrue(should_ignore_file("file.tmp", patterns))
+        self.assertTrue(should_ignore_file("example.md", patterns))
+
+        # Directory patterns
+        self.assertTrue(should_ignore_file("build/file.md", patterns))
+
+        # Glob patterns
+        self.assertTrue(should_ignore_file("test_something", patterns))
+
+        # Should not be ignored
+        self.assertFalse(should_ignore_file("normal.md", patterns))
+        self.assertFalse(should_ignore_file("src/normal.md", patterns))
+
+    def test_should_ignore_file_path_normalization(self) -> None:
+        """Test that paths with different separators are handled correctly."""
+        patterns = ["build/", "*.tmp"]
+
+        # Test with different path separators
+        self.assertTrue(should_ignore_file("build\\file.md", patterns))
+        self.assertTrue(should_ignore_file("build/file.md", patterns))
+        self.assertTrue(should_ignore_file("path\\to\\file.tmp", patterns))
+        self.assertTrue(should_ignore_file("path/to/file.tmp", patterns))
 
 
 if __name__ == "__main__":

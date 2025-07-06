@@ -2,6 +2,7 @@
 
 import unittest
 import tempfile
+import shutil
 from pathlib import Path
 from unittest.mock import Mock, patch
 import json
@@ -276,6 +277,204 @@ class TestMkDocsPlugin(unittest.TestCase):
         plugin.on_files(mock_files, config=self.mock_config)
         # Plugin is disabled, so no files should be appended
         mock_files.append.assert_not_called()
+
+
+class TestIgnoreIntegration(unittest.TestCase):
+    """Integration tests for .requirementsignore functionality with the plugin."""
+
+    def setUp(self) -> None:
+        """Set up test fixtures with temporary directory."""
+        self.plugin = ReqSnake()
+        self.temp_dir = tempfile.mkdtemp()
+        self.temp_path = Path(self.temp_dir)
+
+        # Create mock config pointing to temp directory
+        self.mock_config = Mock()
+        self.mock_config.config_file_path = str(self.temp_path / "mkdocs.yml")
+
+        # Create mock files
+        self.create_mock_files()
+
+    def tearDown(self) -> None:
+        """Clean up temporary directory."""
+        shutil.rmtree(self.temp_dir)
+
+    def create_mock_files(self) -> None:
+        """Create mock files for testing."""
+        # File with requirements that should be processed
+        self.mock_file_normal = Mock()
+        self.mock_file_normal.src_uri = "docs/requirements.md"
+        self.mock_file_normal.content_string = """> REQ-1
+> This is a normal requirement
+> critical"""
+
+        # File that should be ignored based on pattern
+        self.mock_file_ignored = Mock()
+        self.mock_file_ignored.src_uri = "docs/test_file.md"
+        self.mock_file_ignored.content_string = """> REQ-2
+> This requirement should be ignored
+> critical"""
+
+        # File in ignored directory
+        self.mock_file_build = Mock()
+        self.mock_file_build.src_uri = "build/generated.md"
+        self.mock_file_build.content_string = """> REQ-3
+> This requirement is in build directory
+> critical"""
+
+        # Another normal file
+        self.mock_file_normal2 = Mock()
+        self.mock_file_normal2.src_uri = "docs/specs.md"
+        self.mock_file_normal2.content_string = """> REQ-4
+> Another normal requirement"""
+
+    def test_ignore_functionality_no_ignore_file(self) -> None:
+        """Test that all files are processed when no .requirementsignore exists."""
+        mock_files = MagicMock()
+        mock_files.documentation_pages.return_value = [
+            self.mock_file_normal,
+            self.mock_file_ignored,
+            self.mock_file_build,
+            self.mock_file_normal2,
+        ]
+        mock_files.append = MagicMock()
+
+        result = self.plugin.on_files(mock_files, config=self.mock_config)
+
+        # All 4 requirements should be processed since no ignore file exists
+        self.assertEqual(mock_files.append.call_count, 5)  # 4 req pages + 1 index
+
+    def test_ignore_functionality_with_patterns(self) -> None:
+        """Test that files are ignored based on .requirementsignore patterns."""
+        # Create .requirementsignore file
+        ignore_content = """# Ignore test files
+test_*.md
+build/
+"""
+        ignore_file = self.temp_path / ".requirementsignore"
+        ignore_file.write_text(ignore_content)
+
+        mock_files = MagicMock()
+        mock_files.documentation_pages.return_value = [
+            self.mock_file_normal,  # Should be processed
+            self.mock_file_ignored,  # Should be ignored (test_*.md)
+            self.mock_file_build,  # Should be ignored (build/)
+            self.mock_file_normal2,  # Should be processed
+        ]
+        mock_files.append = MagicMock()
+
+        with patch("mkdocs_reqsnake.plugin.logger") as mock_logger:
+            result = self.plugin.on_files(mock_files, config=self.mock_config)
+
+            # Only 2 requirements should be processed (REQ-1 and REQ-4)
+            self.assertEqual(mock_files.append.call_count, 3)  # 2 req pages + 1 index
+
+            # Check that ignored files were logged
+            ignore_calls = [
+                call
+                for call in mock_logger.info.call_args_list
+                if "Ignored" in str(call)
+            ]
+            self.assertEqual(len(ignore_calls), 1)
+            self.assertIn("Ignored 2 files", str(ignore_calls[0]))
+
+    def test_ignore_functionality_glob_patterns(self) -> None:
+        """Test that glob patterns work correctly in .requirementsignore."""
+        # Create .requirementsignore file with glob patterns
+        ignore_content = """*.tmp
+**/build/**
+docs/test_*
+"""
+        ignore_file = self.temp_path / ".requirementsignore"
+        ignore_file.write_text(ignore_content)
+
+        # Create additional mock files
+        mock_file_tmp = Mock()
+        mock_file_tmp.src_uri = "file.tmp"
+        mock_file_tmp.content_string = "> REQ-TMP\n> Temp requirement"
+
+        mock_file_nested_build = Mock()
+        mock_file_nested_build.src_uri = "project/build/nested.md"
+        mock_file_nested_build.content_string = (
+            "> REQ-NESTED\n> Nested build requirement"
+        )
+
+        mock_files = MagicMock()
+        mock_files.documentation_pages.return_value = [
+            self.mock_file_normal,  # Should be processed
+            self.mock_file_ignored,  # Should be ignored (docs/test_*)
+            mock_file_tmp,  # Should be ignored (*.tmp)
+            mock_file_nested_build,  # Should be ignored (**/build/**)
+            self.mock_file_normal2,  # Should be processed
+        ]
+        mock_files.append = MagicMock()
+
+        with patch("mkdocs_reqsnake.plugin.logger") as mock_logger:
+            result = self.plugin.on_files(mock_files, config=self.mock_config)
+
+            # Only 2 requirements should be processed
+            self.assertEqual(mock_files.append.call_count, 3)  # 2 req pages + 1 index
+
+            # Check that ignored files were logged
+            ignore_calls = [
+                call
+                for call in mock_logger.info.call_args_list
+                if "Ignored" in str(call)
+            ]
+            self.assertEqual(len(ignore_calls), 1)
+            self.assertIn("Ignored 3 files", str(ignore_calls[0]))
+
+    def test_ignore_functionality_with_comments_and_blanks(self) -> None:
+        """Test that comments and blank lines in .requirementsignore are handled correctly."""
+        ignore_content = """# This is a comment
+# Another comment
+
+test_*.md
+
+# Ignore build directories
+build/
+
+# End comment"""
+        ignore_file = self.temp_path / ".requirementsignore"
+        ignore_file.write_text(ignore_content)
+
+        mock_files = MagicMock()
+        mock_files.documentation_pages.return_value = [
+            self.mock_file_normal,  # Should be processed
+            self.mock_file_ignored,  # Should be ignored
+            self.mock_file_build,  # Should be ignored
+            self.mock_file_normal2,  # Should be processed
+        ]
+        mock_files.append = MagicMock()
+
+        result = self.plugin.on_files(mock_files, config=self.mock_config)
+
+        # Only 2 requirements should be processed
+        self.assertEqual(mock_files.append.call_count, 3)  # 2 req pages + 1 index
+
+    def test_ignore_functionality_error_handling(self) -> None:
+        """Test that plugin handles .requirementsignore read errors gracefully."""
+        # Create a .requirementsignore file and then make it unreadable
+        ignore_file = self.temp_path / ".requirementsignore"
+        ignore_file.write_text("test_*.md")
+        ignore_file.chmod(0o000)  # Make file unreadable
+
+        mock_files = MagicMock()
+        mock_files.documentation_pages.return_value = [
+            self.mock_file_normal,
+            self.mock_file_ignored,
+        ]
+        mock_files.append = MagicMock()
+
+        try:
+            # Should not raise an exception and should process all files
+            result = self.plugin.on_files(mock_files, config=self.mock_config)
+
+            # All files should be processed when ignore file can't be read
+            self.assertEqual(mock_files.append.call_count, 3)  # 2 req pages + 1 index
+        finally:
+            # Restore permissions for cleanup
+            ignore_file.chmod(0o644)
 
 
 if __name__ == "__main__":

@@ -8,9 +8,9 @@ ReqSnake is a MkDocs plugin that automatically extracts and displays requirement
 
 ## Core Architecture
 
-- **`mkdocs_reqsnake/reqsnake.py`** - Core parsing logic, validation, and Python API
+- **`mkdocs_reqsnake/models.py`** - Core data models which make up the application
 - **`mkdocs_reqsnake/plugin.py`** - MkDocs plugin integration via `on_files()` hook
-- **`mkdocs_reqsnake/generator.py`** - Generates requirement pages and index with Mermaid diagrams
+- **`mkdocs_reqsnake/*.py`** - Other Python files which work together with `models.py` and `plugin.py`
 
 ### Requirements Syntax
 
@@ -42,6 +42,13 @@ mkdocs serve
 - **Color coding**: Parents (blue), current (orange), children (purple) - dark mode compatible
 - **Completion tracking**: Status summaries in all sections (e.g., "Parents (1/3 completed)")
 - **Critical indicators**: Warning appears above description for visibility
+
+### File Filtering (`.requirementsignore`)
+
+- **Gitignore-style patterns**: Support for `*.tmp`, `build/`, `test_*.md` patterns
+- **Automatic discovery**: Loads `.requirementsignore` from project root automatically
+- **Graceful fallback**: Continues processing if ignore file is missing or unreadable
+- **Logging**: Reports number of ignored files during build
 
 ### Implementation Notes
 

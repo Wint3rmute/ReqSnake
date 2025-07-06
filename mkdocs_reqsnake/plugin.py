@@ -1,5 +1,6 @@
 """MkDocs plugin for ReqSnake requirements management integration."""
 
+from pathlib import Path
 from typing import Optional
 
 from mkdocs.plugins import BasePlugin
@@ -15,6 +16,7 @@ from .generator import (
     generate_requirement_index_content,
 )
 from .exceptions import ReqSnakeError
+from .utils import load_ignore_patterns, should_ignore_file
 
 logger = get_plugin_logger(__name__)
 
@@ -28,11 +30,34 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
         """Generate requirements pages and index for MkDocs site from Markdown requirements."""
         if not self.config.get("enabled", True):
             return files
+
+        # Load ignore patterns from .requirementsignore file
+        try:
+            config_dir = (
+                Path(config.config_file_path).parent
+                if config.config_file_path
+                else Path.cwd()
+            )
+            ignore_patterns = load_ignore_patterns(config_dir)
+        except (TypeError, AttributeError, OSError):
+            # Handle mock objects or invalid paths in tests
+            ignore_patterns = []
+
         # Extract file paths and content from MkDocs files
         file_data = []
+        ignored_count = 0
         for file in files.documentation_pages():
             if file.src_uri is not None and file.content_string is not None:
+                # Check if file should be ignored
+                if should_ignore_file(file.src_uri, ignore_patterns):
+                    ignored_count += 1
+                    continue
                 file_data.append((file.src_uri, file.content_string))
+
+        if ignored_count > 0:
+            logger.info(
+                f"Ignored {ignored_count} files based on .requirementsignore patterns"
+            )
 
         if not file_data:
             logger.info("No documentation files found to parse for requirements")
