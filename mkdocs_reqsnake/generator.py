@@ -99,10 +99,18 @@ def generate_requirement_page_content(
         for parent_id in req.parents:
             # Find the parent requirement to get its description
             parent_desc = _get_requirement_by_id(parent_id)
-            if parent_desc:
-                lines.append(f"- [{parent_id}](./{parent_id}.md) - {parent_desc}")
+            # Extract category for hierarchical path
+            if "-" in parent_id:
+                parent_category = parent_id.rsplit("-", 1)[0]
             else:
-                lines.append(f"- [{parent_id}](./{parent_id}.md)")
+                parent_category = "OTHER"
+
+            if parent_desc:
+                lines.append(
+                    f"- [{parent_id}](../{parent_category}/{parent_id}.md) - {parent_desc}"
+                )
+            else:
+                lines.append(f"- [{parent_id}](../{parent_category}/{parent_id}.md)")
         lines.append("")
 
     # Add children if any
@@ -124,10 +132,18 @@ def generate_requirement_page_content(
         for child_id in sorted(children):
             # Find the child requirement to get its description
             child_desc = _get_requirement_by_id(child_id)
-            if child_desc:
-                lines.append(f"- [{child_id}](./{child_id}.md) - {child_desc}")
+            # Extract category for hierarchical path
+            if "-" in child_id:
+                child_category = child_id.rsplit("-", 1)[0]
             else:
-                lines.append(f"- [{child_id}](./{child_id}.md)")
+                child_category = "OTHER"
+
+            if child_desc:
+                lines.append(
+                    f"- [{child_id}](../{child_category}/{child_id}.md) - {child_desc}"
+                )
+            else:
+                lines.append(f"- [{child_id}](../{child_category}/{child_id}.md)")
         lines.append("")
 
     # Add source file link
@@ -163,27 +179,36 @@ def generate_requirement_index_content(
     )
     lines.append("")
 
-    # Group by file
-    file_groups: Dict[Path, List[ParsedRequirement]] = {}
+    # Group by requirement category (e.g., REQ-CORE, REQ-PARSER, REQ-TEST)
+    category_groups: Dict[str, List[ParsedRequirement]] = {}
     for pr in parsed_requirements:
-        if pr.source_file not in file_groups:
-            file_groups[pr.source_file] = []
-        file_groups[pr.source_file].append(pr)
+        req_id = pr.requirement.req_id
+        # Extract category from requirement ID (everything before the last dash)
+        if "-" in req_id:
+            category = req_id.rsplit("-", 1)[0]  # e.g., "REQ-CORE-1" -> "REQ-CORE"
+        else:
+            category = "OTHER"  # Fallback for non-standard IDs
 
-    # Sort files and requirements for consistent output
-    sorted_files = sorted(file_groups.keys())
+        if category not in category_groups:
+            category_groups[category] = []
+        category_groups[category].append(pr)
 
-    for file_path in sorted_files:
-        file_reqs = file_groups[file_path]
-        file_total = len(file_reqs)
-        file_completed = sum(1 for pr in file_reqs if pr.requirement.completed)
+    # Sort categories and requirements for consistent output
+    sorted_categories = sorted(category_groups.keys())
 
-        lines.append(f"## {file_path}")
-        lines.append(f"*Completion: {file_completed}/{file_total} requirements*")
+    for category in sorted_categories:
+        category_reqs = category_groups[category]
+        category_total = len(category_reqs)
+        category_completed = sum(1 for pr in category_reqs if pr.requirement.completed)
+
+        lines.append(f"## {category}")
+        lines.append(
+            f"*Completion: {category_completed}/{category_total} requirements*"
+        )
         lines.append("")
 
         # Sort requirements by ID for consistent output
-        sorted_reqs = sorted(file_reqs, key=lambda pr: pr.requirement.req_id)
+        sorted_reqs = sorted(category_reqs, key=lambda pr: pr.requirement.req_id)
 
         for pr in sorted_reqs:
             req = pr.requirement
@@ -191,7 +216,7 @@ def generate_requirement_index_content(
             critical_indicator = "⚠️ " if req.critical else ""
 
             lines.append(
-                f"- {status_emoji} {critical_indicator}[{req.req_id}](./{req.req_id}.md): {req.description}"
+                f"- {status_emoji} {critical_indicator}[{req.req_id}](./{category}/{req.req_id}.md): {req.description}"
             )
         lines.append("")
 

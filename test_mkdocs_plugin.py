@@ -101,8 +101,8 @@ class TestMkDocsPlugin(unittest.TestCase):
 
         # Check that we have files for each requirement
         req_ids = [f.src_uri for f in generated_files if "reqsnake" in f.src_uri]
-        self.assertIn("reqsnake/REQ-1.md", req_ids)
-        self.assertIn("reqsnake/REQ-2.md", req_ids)
+        self.assertIn("reqsnake/REQ/REQ-1.md", req_ids)
+        self.assertIn("reqsnake/REQ/REQ-2.md", req_ids)
         self.assertIn("reqsnake/index.md", req_ids)
 
     def test_on_files_ignores_files_without_src_dir(self) -> None:
@@ -214,14 +214,14 @@ class TestMkDocsPlugin(unittest.TestCase):
         # Find the requirement file
         req_file = None
         for file in generated_files:
-            if hasattr(file, "src_uri") and file.src_uri == "reqsnake/REQ-1.md":
+            if hasattr(file, "src_uri") and file.src_uri == "reqsnake/REQ/REQ-1.md":
                 req_file = file
                 break
 
         self.assertIsNotNone(req_file)
         if req_file is not None:
             # Test that the file was created with the correct structure
-            self.assertEqual(req_file.src_uri, "reqsnake/REQ-1.md")
+            self.assertEqual(req_file.src_uri, "reqsnake/REQ/REQ-1.md")
             self.assertEqual(req_file.inclusion, InclusionLevel.INCLUDED)
 
     def test_index_file_content(self) -> None:

@@ -81,10 +81,19 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
                     parsed_req, parsed_requirements
                 )
 
+                # Extract category from requirement ID for directory structure
+                req_id = req.req_id
+                if "-" in req_id:
+                    category = req_id.rsplit("-", 1)[
+                        0
+                    ]  # e.g., "REQ-CORE-1" -> "REQ-CORE"
+                else:
+                    category = "OTHER"  # Fallback for non-standard IDs
+
                 files.append(
                     File.generated(
                         config,
-                        src_uri=f"reqsnake/{req.req_id}.md",
+                        src_uri=f"reqsnake/{category}/{req.req_id}.md",
                         content=content,
                         inclusion=InclusionLevel.INCLUDED,
                     )
