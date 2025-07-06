@@ -1,3 +1,5 @@
+# Markdown Parser
+
 > REQ-PARSER-2
 > The parser shall raise an error if a requirement ID is duplicated in the scanned files.
 > child-of: REQ-CORE-2
@@ -66,7 +68,7 @@ Todo: this should be changed to raise errors instead?
 
 > REQ-PARSER-18
 > The parser shall handle files with mixed line endings and leading/trailing whitespace.
-> child-of: REQ-CORE-1 
+> child-of: REQ-CORE-1
 
 > REQ-PARSER-19
 > The parser shall raise errors on duplicated 'child-of:' lines per requirement.

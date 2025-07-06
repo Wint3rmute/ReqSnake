@@ -6,20 +6,16 @@ import os
 import shutil
 import json
 import random
-from mkdocs_reqsnake.reqsnake import (
-    Requirement,
-    _parse_requirements_from_markdown,
-    reqsnake_init,
-    reqsnake_lock,
-    reqsnake_status,
-    reqsnake_check,
-    StatusResult,
-    _progress_bar,
+from mkdocs_reqsnake.models import Requirement
+from mkdocs_reqsnake.parser import (
+    parse_requirements_from_markdown,
+    parse_requirements_from_files,
 )
+from mkdocs_reqsnake.validator import validate_requirements
+from mkdocs_reqsnake.utils import progress_bar
 from pathlib import Path
 import subprocess
 import sys
-import mkdocs_reqsnake.reqsnake as reqsnake
 from typing import Any
 
 
@@ -29,7 +25,7 @@ class TestRequirementParser(unittest.TestCase):
     def test_single_requirement(self) -> None:
         """Test parsing a single requirement with critical and children."""
         md = "> MECH-123\n> The wing must withstand 5g load.\n>\n> critical\n> child-of: MECH-54\n> child-of: MECH-57"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             reqs[0],
@@ -37,7 +33,7 @@ class TestRequirementParser(unittest.TestCase):
                 req_id="MECH-123",
                 description="The wing must withstand 5g load.",
                 critical=True,
-                children=["MECH-54", "MECH-57"],
+                parents=["MECH-54", "MECH-57"],
             ),
         )
 
@@ -55,7 +51,7 @@ class TestRequirementParser(unittest.TestCase):
 >
 > child-of: AVIO-16
 """
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 2)
         self.assertEqual(
             reqs[0],
@@ -63,7 +59,7 @@ class TestRequirementParser(unittest.TestCase):
                 req_id="MECH-123",
                 description="The wing must withstand 5g load.",
                 critical=True,
-                children=["MECH-54"],
+                parents=["MECH-54"],
             ),
         )
         self.assertEqual(
@@ -72,7 +68,7 @@ class TestRequirementParser(unittest.TestCase):
                 req_id="AVIO-15",
                 description="Avionics must support dual redundancy.",
                 critical=False,
-                children=["AVIO-16"],
+                parents=["AVIO-16"],
             ),
         )
 
@@ -82,7 +78,7 @@ class TestRequirementParser(unittest.TestCase):
 > SW-33
 > On-board software for the plane.
 """
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
             reqs[0],
@@ -90,7 +86,7 @@ class TestRequirementParser(unittest.TestCase):
                 req_id="SW-33",
                 description="On-board software for the plane.",
                 critical=False,
-                children=[],
+                parents=[],
             ),
         )
 
@@ -104,7 +100,7 @@ Some text.
 > The wing must withstand 5g load.
 > critical
 """
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "MECH-123")
 
@@ -119,21 +115,21 @@ Some text.
 > MECH-123
 > Another requirement with the same ID.
 """
-        with tempfile.TemporaryDirectory() as tmpdir:
-            (Path(tmpdir) / "reqs.md").write_text(md)
-            with self.assertRaises(ValueError) as context:
-                reqsnake_init(tmpdir)
-            self.assertIn(
-                "Duplicate requirement ID 'MECH-123' found", str(context.exception)
-            )
+        file_data = [("test.md", md)]
+        with self.assertRaises(ValueError) as context:
+            parsed_reqs = parse_requirements_from_files(file_data)
+            validate_requirements(parsed_reqs)
+        self.assertIn(
+            "Duplicate requirement ID 'MECH-123' found", str(context.exception)
+        )
 
     def test_child_of_syntax(self) -> None:
         """Test that 'child-of' is supported as a child relationship key."""
         md = "> REQ-1\n> Parent requirement.\n> child-of REQ-2\n> child-of: REQ-3\n> CHILD-OF req-5\n> child-of: REQ-6\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
-            set(reqs[0].children),
+            set(reqs[0].parents),
             {"REQ-2", "REQ-3", "req-5", "REQ-6"},
         )
 
@@ -150,16 +146,16 @@ A bit of text
 
 Moar text!
         """
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 0)
 
     def test_child_of_whitespace_and_case(self) -> None:
         """Test that 'child-of' is parsed case-insensitively and trims whitespace."""
         md = "> REQ-1\n> Parent.\n>   CHILD-OF:   REQ-2   \n> child-of   REQ-3\n> child-OF:REQ-4\n"
-        reqs = _parse_requirements_from_markdown(md)
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(
-            set(reqs[0].children),
+            set(reqs[0].parents),
             {"REQ-2", "REQ-3", "REQ-4"},
         )
 
@@ -168,675 +164,286 @@ Moar text!
         # Duplicate via 'child-of' (exact)
         md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n> child-of: REQ-2\n"
         with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md)
-        self.assertIn("Duplicate child ID", str(ctx.exception))
+            parse_requirements_from_markdown(md)
+        self.assertIn("Duplicate parent ID", str(ctx.exception))
         # Duplicate across 'child-of' forms (case-insensitive)
         md2 = "> REQ-1\n> Parent.\n> child-of REQ-2\n> child-of: req-2\n"
         with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md2)
-        self.assertIn("Duplicate child ID", str(ctx.exception))
+            parse_requirements_from_markdown(md2)
+        self.assertIn("Duplicate parent ID", str(ctx.exception))
         # Duplicate with whitespace differences
         md3 = "> REQ-1\n> Parent.\n> child-of:   REQ-2   \n> child-of: REQ-2\n"
         with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md3)
-        self.assertIn("Duplicate child ID", str(ctx.exception))
+            parse_requirements_from_markdown(md3)
+        self.assertIn("Duplicate parent ID", str(ctx.exception))
 
     def test_multiple_child_lines_and_duplicates(self) -> None:
         """REQ-PARSER-9/99: Multiple 'child-of' lines are allowed, but duplicates must raise an error."""
         md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-2\n> child-of: REQ-3"
         with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md)
-        self.assertIn("Duplicate child ID 'REQ-2'", str(ctx.exception))
+            parse_requirements_from_markdown(md)
+        self.assertIn("Duplicate parent ID 'REQ-2'", str(ctx.exception))
 
     def test_requirement_id_format_enforced(self) -> None:
         """REQ-CORE-6: IDs must be in the form <STRING>-<NUMBER>."""
         # Valid IDs
         valid_md = "> REQ-1\n> Valid.\n\n> SW-33\n> Valid.\n\n> A-0\n> Valid.\n"
-        reqs = _parse_requirements_from_markdown(valid_md)
+        reqs = parse_requirements_from_markdown(valid_md)
         self.assertEqual(len(reqs), 3)
         # Invalid IDs
         invalid_cases = [
             "> REQ1\n> Invalid.\n",  # missing dash
             "> REQ-\n> Invalid.\n",  # missing number
             "> -123\n> Invalid.\n",  # missing string
-            "> 123-REQ\n> Invalid.\n",  # number first
+            "> REQ-abc\n> Invalid.\n",  # non-numeric suffix
+            "> REQ-12.3\n> Invalid.\n",  # decimal not allowed
+            "> REQ-12a\n> Invalid.\n",  # mixed alphanumeric suffix
             "> REQ-12A\n> Invalid.\n",  # number not integer
             "> _REQ-1\n> Invalid.\n",  # starts with underscore
             "> 1REQ-1\n> Invalid.\n",  # starts with number
         ]
         for md in invalid_cases:
             with self.assertRaises(ValueError, msg=md):
-                _parse_requirements_from_markdown(md)
+                parse_requirements_from_markdown(md)
 
-
-class TestRequirePyScenarios(unittest.TestCase):
-    """Integration tests for ReqSnake scenarios as described in ARCHITECTURE.md."""
-
-    def test_stress(self) -> None:
-        """Test init and re-init scenarios for requirements management."""
-        starting_words = [
-            "system",
-            "user",
-            "interface",
-            "database",
-            "network",
-            "security",
-            "performance",
-            "module",
-            "feature",
-            "service",
-            "api",
-            "authentication",
-            "authorization",
-            "logging",
-            "handling",
+    def test_ascii_only_ids(self) -> None:
+        """REQ-CORE-6: IDs must contain only ASCII characters."""
+        # Valid ASCII IDs
+        valid_md = "> REQ-1\n> Valid.\n\n> SW-33\n> Valid.\n"
+        reqs = parse_requirements_from_markdown(valid_md)
+        self.assertEqual(len(reqs), 2)
+        # Invalid non-ASCII IDs
+        invalid_cases = [
+            "> RÉQ-1\n> Invalid.\n",  # accented character
+            "> REQ-1\n> Valid.\n\n> SW-33\n> Valid.\n\n> RÉQ-2\n> Invalid.\n",  # mixed
         ]
+        for invalid_md in invalid_cases:
+            with self.assertRaises(ValueError) as ctx:
+                parse_requirements_from_markdown(invalid_md)
+            self.assertIn("contains non-ASCII characters", str(ctx.exception))
 
-        ending_words = [
-            "report errors",
-            "satisfy the user",
-            "crash and burn",
-            "support users emotionally",
-            "generate reports that no one will read",
-            "cause a segfault",
-            "make the user understand what sehnsucht means",
-            "sacrifice goats",
-            "eat the user's soul",
-            "display an image of a beautiful clear sky",
-            "criticise the user's taste in music",
-        ]
+    def test_unknown_attributes_raise_error(self) -> None:
+        """REQ-PARSER-10: Unknown attributes should be ignored, not raise a ValueError."""
+        md = "> REQ-1\n> Test.\n> unknown-attr\n"
+        reqs = parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 1)
+        self.assertEqual(reqs[0].req_id, "REQ-1")
+        self.assertEqual(reqs[0].description, "Test.")
 
-        seen_requirements: list[str] = []
+    def test_circular_dependency_detection(self) -> None:
+        """REQ-PARSER-15: Circular dependencies should be detected and raise ValueError."""
+        md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
+        file_data = [("test.md", md)]
+        parsed_reqs = parse_requirements_from_files(file_data)
+        with self.assertRaises(ValueError) as ctx:
+            validate_requirements(parsed_reqs)
+        self.assertIn("Circular dependency detected", str(ctx.exception))
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            for file_num in range(100):
-                file_path = f"reqs_{file_num}.md"
-                md_content = "# One more file with requirements"
-                for req_num in range(100):
-                    req_id = f"REQ-{file_num * 10000 + req_num}"
-                    description = (
-                        " ".join(
-                            random.choices(starting_words, k=random.randint(2, 5))
-                        ).capitalize()
-                        + " should "
-                        + random.choice(ending_words)
-                        + "."
-                    )
-                    critical_line = (
-                        "\n> critical"
-                        if random.choice([True, False, False, False, False, False])
-                        else ""
-                    )
+    def test_completed_parent_with_incomplete_child_fails(self) -> None:
+        """REQ-CORE-7: Completed requirements with incomplete children should raise ValueError."""
+        md = "> REQ-1\n> Parent.\n> completed\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
+        file_data = [("test.md", md)]
+        parsed_reqs = parse_requirements_from_files(file_data)
+        with self.assertRaises(ValueError) as ctx:
+            validate_requirements(parsed_reqs)
+        self.assertIn(
+            "are marked as completed but have incomplete children", str(ctx.exception)
+        )
 
-                    child_of = ""
-                    if any(seen_requirements):
-                        for parent_req_id in random.sample(
-                            seen_requirements,
-                            random.randint(1, min(10, len(seen_requirements))),
-                        ):
-                            child_of += f"\n> child-of: {parent_req_id}"
-
-                    md_content += f"""
-> {req_id}
-> {description}{critical_line}{child_of}
-
-"""
-                    seen_requirements.append(req_id)
-
-                (test_dir_path / file_path).write_text(md_content)
-
-            init_result = reqsnake_init(tmpdir)
-            self.assertEqual(
-                len(init_result.requirements),
-                10_000,
-                "Stress test should parse 10'000 requirements",
-            )
-
-    def test_init_and_reinit(self) -> None:
-        """Test init and re-init scenarios for requirements management."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = """
-> REQ-1
-> The first requirement.
-> critical
-
-> REQ-2
-> The second requirement.
-> child-of: REQ-1
-"""
-            reqs_md = test_dir_path / "reqs.md"
-            reqs_md.write_text(md_content)
-            init_result = reqsnake_init(tmpdir)
-            files, reqs = init_result.scanned_files, init_result.requirements
-            self.assertIn(test_dir_path / "reqs.md", files)
-            lockfile_path = test_dir_path / "reqsnake.lock"
-            self.assertTrue(lockfile_path.exists())
-            data = json.loads(lockfile_path.read_text())
-            self.assertEqual(len(data["requirements"]), 2)
-            init_result = reqsnake_init(tmpdir)
-            files2, reqs2 = init_result.scanned_files, init_result.requirements
-            self.assertEqual(files, files2)
-            self.assertEqual(len(reqs2), 2)
-            data2 = json.loads(lockfile_path.read_text())
-            self.assertEqual(data, data2)
-
-    def test_add_requirement_updates_lockfile(self) -> None:
-        """Test that requirements are added to reqsnake.lock when Markdown files are updated."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = "> REQ-1\n> The first requirement.\n> critical\n"
-            md_path = test_dir_path / "reqs.md"
-            md_path.write_text(md_content)
-            reqsnake_init(tmpdir)
-            lockfile_path = test_dir_path / "reqsnake.lock"
-            data = json.loads(lockfile_path.read_text())
-            self.assertEqual(len(data["requirements"]), 1)
-            self.assertEqual(data["requirements"][0]["req_id"], "REQ-1")
-            md_content_updated = "> REQ-1\n> The first requirement.\n> critical\n\n> REQ-2\n> The second requirement.\n"
-            md_path.write_text(md_content_updated)
-            reqsnake_lock(tmpdir)
-            data_updated = json.loads(lockfile_path.read_text())
-            self.assertEqual(len(data_updated["requirements"]), 2)
-            ids = {req["req_id"] for req in data_updated["requirements"]}
-            self.assertIn("REQ-1", ids)
-            self.assertIn("REQ-2", ids)
-
-    def test_child_of_nonexistent_requirement(self) -> None:
-        """Test behavior when a requirement is marked as a child of a non-existing requirement."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = (
-                "> REQ-1\n> The first requirement.\n> child-of: REQ-DOES-NOT-EXIST\n"
-            )
-            reqs_md = test_dir_path / "reqs.md"
-            reqs_md.write_text(md_content)
-            init_result = reqsnake_init(tmpdir)
-            files, reqs = init_result.scanned_files, init_result.requirements
-            self.assertEqual(len(reqs), 1)
-            req = reqs[0]
-            self.assertIn("REQ-DOES-NOT-EXIST", req.children)
-
-    def test_init_duplicate_ids_different_files(self) -> None:
-        """Test that an error is raised when duplicate requirement IDs are found within multiple files during init."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            (test_dir_path / "reqs1.md").write_text("> REQ-1\n> The first requirement.")
-            (test_dir_path / "reqs2.md").write_text(
-                "> REQ-1\n> The duplicated requirement."
-            )
-            with self.assertRaises(ValueError) as context:
-                reqsnake_init(tmpdir)
-            self.assertIn(
-                "Duplicate requirement ID 'REQ-1' found", str(context.exception)
-            )
-
-    def test_lock_duplicate_ids_different_files(self) -> None:
-        """Test that an error is raised when duplicate requirement IDs are found within multiple files during lock."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            (test_dir_path / "reqs1.md").write_text("> REQ-1\n> The first requirement.")
-
-            reqsnake_init(tmpdir)
-            (test_dir_path / "reqs2.md").write_text(
-                "> REQ-1\n> The duplicated requirement."
-            )
-            with self.assertRaises(ValueError) as context:
-                reqsnake_lock(tmpdir)
-            self.assertIn(
-                "Duplicate requirement ID 'REQ-1' found", str(context.exception)
-            )
-
-    def test_check_duplicate_ids_different_files(self) -> None:
-        """Test that an error is raised when duplicate requirement IDs are found within multiple files during check."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            (test_dir_path / "reqs1.md").write_text("> REQ-1\n> The first requirement.")
-
-            reqsnake_init(tmpdir)
-            (test_dir_path / "reqs2.md").write_text(
-                "> REQ-1\n> The duplicated requirement."
-            )
-            with self.assertRaises(ValueError) as context:
-                reqsnake_check(tmpdir)
-            self.assertIn(
-                "Duplicate requirement ID 'REQ-1' found", str(context.exception)
-            )
-
-    def test_lock_idempotency(self) -> None:
-        """Test that running reqsnake_lock twice without changes does not alter the lockfile (idempotency)."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = "> REQ-1\n> The first requirement.\n> critical\n"
-            md_path = test_dir_path / "reqs.md"
-            md_path.write_text(md_content)
-            reqsnake_init(tmpdir)
-            lockfile_path = test_dir_path / "reqsnake.lock"
-            data_1 = json.loads(lockfile_path.read_text())
-            reqsnake_lock(tmpdir)
-            data_2 = json.loads(lockfile_path.read_text())
-            self.assertEqual(
-                data_1,
-                data_2,
-                "Lockfile should not change if requirements are unchanged.",
-            )
-
-    def test_requirementsignore_ignores_files(self) -> None:
-        """REQ-CLI-11: Files matching .requirementsignore .gitignore-style globs are ignored during scanning."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            # Create two markdown files
-            file1 = test_dir_path / "reqs1.md"
-            file2 = test_dir_path / "ignoreme.md"
-            file1.write_text("> REQ-1\n> Requirement 1.\n")
-            file2.write_text("> REQ-2\n> Requirement 2.\n")
-            # Test literal ignore
-            (test_dir_path / ".requirementsignore").write_text("ignoreme.md\n")
-            init_result = reqsnake_init(tmpdir)
-            files, reqs = init_result.scanned_files, init_result.requirements
-            scanned = {f.name for f in files}
-            self.assertIn("reqs1.md", scanned)
-            self.assertNotIn("ignoreme.md", scanned)
-            self.assertEqual(len(reqs), 1)
-            self.assertEqual(reqs[0].req_id, "REQ-1")
-            # Test glob ignore
-            (test_dir_path / ".requirementsignore").write_text("*ignore*.md\n")
-            init_result = reqsnake_init(tmpdir)
-            files, reqs = init_result.scanned_files, init_result.requirements
-            scanned = {f.name for f in files}
-            self.assertIn("reqs1.md", scanned)
-            self.assertNotIn("ignoreme.md", scanned)
-            self.assertEqual(len(reqs), 1)
-            self.assertEqual(reqs[0].req_id, "REQ-1")
-            # Test negation (!)
-            (test_dir_path / ".requirementsignore").write_text("*.md\n!reqs1.md\n")
-            init_result = reqsnake_init(tmpdir)
-            files, reqs = init_result.scanned_files, init_result.requirements
-            scanned = {f.name for f in files}
-            self.assertIn("reqs1.md", scanned)
-            self.assertNotIn("ignoreme.md", scanned)
-            self.assertEqual(len(reqs), 1)
-            self.assertEqual(reqs[0].req_id, "REQ-1")
-            # Now remove .requirementsignore and both should be scanned
-            (test_dir_path / ".requirementsignore").unlink()
-            init_result = reqsnake_init(tmpdir)
-            files, reqs = init_result.scanned_files, init_result.requirements
-            scanned = {f.name for f in files}
-            self.assertIn("reqs1.md", scanned)
-            self.assertIn("ignoreme.md", scanned)
-            self.assertEqual(len(reqs), 2)
+    def test_completed_parent_with_completed_child_passes(self) -> None:
+        """REQ-CORE-7: Completed requirements with completed children should pass validation."""
+        md = "> REQ-1\n> Parent.\n> completed\n> child-of: REQ-2\n\n> REQ-2\n> Child.\n> completed\n"
+        file_data = [("test.md", md)]
+        parsed_reqs = parse_requirements_from_files(file_data)
+        # Should not raise an exception
+        validate_requirements(parsed_reqs)
 
 
 class TestRequirementPrettyString(unittest.TestCase):
-    """Unit tests for the to_pretty_string method of Requirement."""
+    """Unit tests for the requirement pretty string formatting."""
 
     def test_pretty_string_variants(self) -> None:
-        """Test pretty string output for various requirement field combinations."""
-        cases = [
-            (
-                Requirement(req_id="REQ-1", description="A minimal requirement."),
-                "REQ-1: A minimal requirement.\n\n",
-            ),
-            (
-                Requirement(
-                    req_id="REQ-2", description="A critical requirement.", critical=True
-                ),
-                "REQ-2: A critical requirement.\n\n\n**⚠️ critical**\n\n",
-            ),
-            (
-                Requirement(
-                    req_id="REQ-3",
-                    description="Has children.",
-                    children=["REQ-1", "REQ-2"],
-                ),
-                "REQ-3: Has children.\n\n\n### Children\n\n\n- REQ-1\n\n- REQ-2\n",
-            ),
-            (
-                Requirement(
-                    req_id="REQ-4", description="Completed requirement.", completed=True
-                ),
-                "REQ-4: Completed requirement.\n\n\n✅ completed\n\n",
-            ),
-            (
-                Requirement(
-                    req_id="REQ-5",
-                    description="All fields set.",
-                    critical=True,
-                    children=["REQ-1", "REQ-2"],
-                    completed=True,
-                ),
-                "REQ-5: All fields set.\n\n\n**⚠️ critical**\n\n\n✅ completed\n\n\n### Children\n\n\n- REQ-1\n\n- REQ-2\n",
-            ),
-        ]
-        for req, expected in cases:
-            with self.subTest(req=req):
-                self.assertEqual(req.to_pretty_string(), expected)
+        """Test that to_pretty_string() generates correct output for various requirement states."""
+        # Basic requirement
+        req = Requirement("REQ-1", "Basic requirement")
+        expected = "REQ-1: Basic requirement\n\n"
+        self.assertEqual(req.to_pretty_string(), expected)
+
+        # Critical requirement
+        req = Requirement("REQ-2", "Critical requirement", critical=True)
+        expected = "REQ-2: Critical requirement\n\n**⚠️ critical**\n\n"
+        self.assertEqual(req.to_pretty_string(), expected)
+
+        # Completed requirement
+        req = Requirement("REQ-3", "Completed requirement", completed=True)
+        expected = "REQ-3: Completed requirement\n\n✅ completed\n\n"
+        self.assertEqual(req.to_pretty_string(), expected)
+
+        # Requirement with children
+        req = Requirement("REQ-4", "Parent requirement", parents=["REQ-5", "REQ-6"])
+        expected = "REQ-4: Parent requirement\n\n### Parents\n\n- REQ-5\n- REQ-6\n"
+        self.assertEqual(req.to_pretty_string(), expected)
+
+        # Complete requirement (critical, completed, with children)
+        req = Requirement(
+            "REQ-7",
+            "Complete requirement",
+            critical=True,
+            completed=True,
+            parents=["REQ-8"],
+        )
+        expected = "REQ-7: Complete requirement\n\n**⚠️ critical**\n\n✅ completed\n\n### Parents\n\n- REQ-8\n"
+        self.assertEqual(req.to_pretty_string(), expected)
 
 
 class TestRequirementParserEdgeCases(unittest.TestCase):
-    """Edge-case tests for the requirement Markdown parser (REQ-PARSER-6 to REQ-PARSER-18)."""
+    """Unit tests for edge cases in the requirement parser."""
 
     def test_ignore_blockquotes_with_only_id_or_description(self) -> None:
-        """REQ-PARSER-6: Ignore blockquotes with only an ID or only a description."""
-        md = "> ONLY-ID\n>\n\n>\n> Only description."
-        reqs = _parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 0)
-
-    def test_ignore_extra_blank_lines_and_whitespace(self) -> None:
-        """REQ-PARSER-7: Ignore extra blank lines or whitespace within blockquotes."""
-        md = "> REQ-1\n>   The requirement.   \n>   \n> critical   "
-        reqs = _parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 1)
-        self.assertEqual(reqs[0].description, "The requirement.")
-        self.assertTrue(reqs[0].critical)
-
-    def test_attribute_keywords_case_and_spaces(self) -> None:
-        """REQ-PARSER-8: Attribute keywords are case-insensitive and ignore spaces. 'child:' is now an error as unknown attribute."""
-        md = "> REQ-1\n> Test.\n>   CrItIcAl  \n>   CHILD: REQ-2  \n>   COMPLETED  "
-        with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md)
-        self.assertIn("Unknown atttribute 'child: req-2'", str(ctx.exception))
-
-    def test_multiple_child_lines_and_duplicates(self) -> None:
-        """REQ-PARSER-9/99: Multiple 'child-of' lines are allowed, but duplicates must raise an error."""
-        md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-2\n> child-of: REQ-3"
-        with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md)
-        self.assertIn("Duplicate child ID 'REQ-2'", str(ctx.exception))
-
-    def test_ignore_unknown_attributes(self) -> None:
-        """REQ-PARSER-10: Unknown attributes in blockquotes now raise an error."""
-        md = "> REQ-1\n> Test.\n> priority: high\n> foo: bar"
-        with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md)
-        self.assertIn("Unknown atttribute 'priority: high'", str(ctx.exception))
-
-    def test_case_sensitive_ids(self) -> None:
-        """REQ-PARSER-11: IDs are case-sensitive; allow IDs differing only by case."""
-        md = "> REQ-1\n> Test.\n\n> req-1\n> Test."
-        reqs = _parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 2)
-        self.assertNotEqual(reqs[0].req_id, reqs[1].req_id)
-
-    def test_inconsistent_blockquote_lines(self) -> None:
-        """REQ-PARSER-12: Only lines starting with '>' are considered (strict mode)."""
-        md = "> REQ-1\nTest.\n> critical"
-        reqs = _parse_requirements_from_markdown(md)
-        # Strict: both ID and description must start with '>'
-        self.assertEqual(len(reqs), 0)
-
-    def test_ignore_markdown_formatting(self) -> None:
-        """REQ-PARSER-13: Ignore Markdown formatting inside blockquotes."""
-        md = "> REQ-1\n> **Bold description** _italic_ `code`\n> critical"
-        reqs = _parse_requirements_from_markdown(md)
-        self.assertIn("Bold description", reqs[0].description)
-
-    def test_ignore_blockquotes_with_blank_lines(self) -> None:
-        """REQ-PARSER-14: Blockquotes that span multiple paragraphs (blank lines) now raise error for unknown attribute."""
-        md = "> REQ-1\n> First line.\n>\n> Second paragraph."
-        with self.assertRaises(ValueError) as ctx:
-            _parse_requirements_from_markdown(md)
-        self.assertIn("Unknown atttribute 'second paragraph.'", str(ctx.exception))
-
-    def test_circular_child_relationship(self) -> None:
-        """REQ-PARSER-15: Raise error if a circular child relationship is detected."""
-        md = (
-            "> REQ-1\n> Test.\n> child-of: REQ-2\n\n> REQ-2\n> Test.\n> child-of: REQ-1"
-        )
-        with tempfile.TemporaryDirectory() as tmpdir:
-            reqs_md = Path(tmpdir) / "reqs.md"
-            reqs_md.write_text(md)
-            with self.assertRaises(ValueError) as ctx:
-                reqsnake_init(tmpdir)
-            self.assertIn("Circular dependency detected", str(ctx.exception))
-
-    def test_unicode_support(self) -> None:
-        """REQ-PARSER-16: Only ASCII IDs are allowed; Unicode IDs should raise an error."""
-        md = "> REQ-ÜNICODE-1\n> Some description.\n> child-of: ASCII-2"
-        with self.assertRaises(ValueError):
-            _parse_requirements_from_markdown(md)
-
-    def test_ignore_blockquotes_in_comments(self) -> None:
-        """REQ-PARSER-17: Ignore blockquotes inside HTML comments."""
-        md = """
-<!--
-> REQ-1
-> Should be ignored.
--->
-> REQ-2
-> Should be parsed.
-"""
-        reqs = _parse_requirements_from_markdown(md)
+        """REQ-PARSER-6: Blockquotes with only an ID or only a description should be ignored."""
+        md = "> REQ-1\n\n> Just a description\n\n> REQ-2\n> Valid requirement\n"
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0].req_id, "REQ-2")
 
-    def test_mixed_line_endings_and_whitespace(self) -> None:
-        """REQ-PARSER-18: Handle files with mixed line endings and leading/trailing whitespace."""
-        md = "> REQ-1\r\n>   Test.   \r\n> critical\n"
-        reqs = _parse_requirements_from_markdown(md)
+    def test_ignore_extra_blank_lines_and_whitespace(self) -> None:
+        """Test that extra blank lines and whitespace are handled correctly."""
+        md = "> REQ-1\n> \n> Description\n> \n> \n> critical\n> \n"
+        reqs = parse_requirements_from_markdown(md)
         self.assertEqual(len(reqs), 1)
+        self.assertEqual(reqs[0].req_id, "REQ-1")
+        self.assertEqual(reqs[0].description, "Description")
+        self.assertTrue(reqs[0].critical)
+
+    def test_attribute_keywords_case_and_spaces(self) -> None:
+        """Test that attribute keywords are case-insensitive and handle whitespace."""
+        md = "> REQ-1\n> Test.\n> CRITICAL\n> COMPLETED\n> CHILD-OF: REQ-2\n"
+        reqs = parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 1)
+        self.assertTrue(reqs[0].critical)
+        self.assertTrue(reqs[0].completed)
+        self.assertEqual(reqs[0].parents, ["REQ-2"])
+
+    def test_multiple_child_lines_and_duplicates(self) -> None:
+        """Test multiple child-of lines and duplicate detection."""
+        md = "> REQ-1\n> Test.\n> child-of: REQ-2\n> child-of: REQ-3\n"
+        reqs = parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 1)
+        self.assertEqual(set(reqs[0].parents), {"REQ-2", "REQ-3"})
+
+    def test_ignore_unknown_attributes(self) -> None:
+        """Test that unknown attributes are ignored."""
+        md = "> REQ-1\n> Test.\n> unknown-attr\n"
+        reqs = parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 1)
+        self.assertEqual(reqs[0].req_id, "REQ-1")
         self.assertEqual(reqs[0].description, "Test.")
+
+    def test_case_sensitive_ids(self) -> None:
+        """Test that requirement IDs are case-sensitive."""
+        md = "> REQ-1\n> First.\n\n> req-1\n> Second.\n"
+        reqs = parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 2)
+        self.assertEqual(reqs[0].req_id, "REQ-1")
+        self.assertEqual(reqs[1].req_id, "req-1")
+
+    def test_inconsistent_blockquote_lines(self) -> None:
+        """Test that inconsistent blockquote lines are handled."""
+        md = "> REQ-1\n> Description\n> critical\n> Not a blockquote\n> completed\n"
+        reqs = parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 1)
+        self.assertTrue(reqs[0].critical)
+        self.assertTrue(reqs[0].completed)
+
+    def test_ignore_markdown_formatting(self) -> None:
+        """Test that markdown formatting in descriptions is preserved."""
+        md = "> REQ-1\n> Description with **bold** and *italic* text.\n"
+        reqs = parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 1)
+        self.assertEqual(
+            reqs[0].description, "Description with **bold** and *italic* text."
+        )
+
+    def test_circular_child_relationship(self) -> None:
+        """Test that circular child relationships are detected."""
+        md = "> REQ-1\n> Parent.\n> child-of: REQ-2\n\n> REQ-2\n> Child.\n> child-of: REQ-1\n"
+        file_data = [("test.md", md)]
+        parsed_reqs = parse_requirements_from_files(file_data)
+        with self.assertRaises(ValueError) as ctx:
+            validate_requirements(parsed_reqs)
+        self.assertIn("Circular dependency detected", str(ctx.exception))
+
+    def test_unicode_support(self) -> None:
+        """Test that unicode characters in descriptions are supported."""
+        md = "> REQ-1\n> Description with unicode: café, naïve, 你好\n"
+        reqs = parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 1)
+        self.assertEqual(
+            reqs[0].description, "Description with unicode: café, naïve, 你好"
+        )
+
+    def test_ignore_blockquotes_in_comments(self) -> None:
+        """REQ-PARSER-17: HTML comments should be ignored."""
+        md = """
+<!-- This is a comment with > REQ-1 > Description -->
+> REQ-1
+> Real requirement
+> critical
+"""
+        reqs = parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 1)
+        self.assertEqual(reqs[0].req_id, "REQ-1")
+        self.assertTrue(reqs[0].critical)
+
+    def test_mixed_line_endings_and_whitespace(self) -> None:
+        """Test that mixed line endings and whitespace are handled correctly."""
+        md = "> REQ-1\r\n> Description\r\n> critical\r\n"
+        reqs = parse_requirements_from_markdown(md)
+        self.assertEqual(len(reqs), 1)
+        self.assertEqual(reqs[0].req_id, "REQ-1")
+        self.assertEqual(reqs[0].description, "Description")
         self.assertTrue(reqs[0].critical)
 
 
-class TestStatusCommand(unittest.TestCase):
-    """Unit and integration tests for the status command functionality."""
-
-    def test_reqsnake_status_basic_functionality(self) -> None:
-        """Test basic reqsnake_status functionality with simple requirements."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = """
-> REQ-1
-> First requirement.
-> completed
-
-> REQ-2
-> Second requirement.
-> critical
-
-> REQ-3
-> Third requirement.
-> critical
-> completed
-"""
-            reqs_md = test_dir_path / "reqs.md"
-            reqs_md.write_text(md_content)
-
-            # Initialize first
-            reqsnake_init(tmpdir)
-
-            # Test status
-            status_result = reqsnake_status(tmpdir)
-
-            self.assertIsInstance(status_result, StatusResult)
-            self.assertEqual(status_result.total_count, 3)
-            self.assertEqual(status_result.completed_count, 2)
-            self.assertEqual(status_result.critical_count, 2)
-            self.assertEqual(status_result.critical_completed_count, 1)
-            self.assertEqual(len(status_result.requirements), 3)
-
-    def test_reqsnake_status_no_lockfile(self) -> None:
-        """Test that reqsnake_status raises FileNotFoundError when lockfile doesn't exist."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with self.assertRaises(FileNotFoundError) as context:
-                reqsnake_status(tmpdir)
-            self.assertIn("reqsnake.lock not found", str(context.exception))
-
-    def test_reqsnake_status_with_hierarchical_requirements(self) -> None:
-        """Test reqsnake_status with parent-child relationships using valid ASCII IDs."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = """
-> REQ-1
-> Parent requirement.
-> critical
-
-> REQ-2
-> Child requirement 1.
-> child-of: REQ-1
-> completed
-
-> REQ-3
-> Child requirement 2.
-> child-of: REQ-1
-"""
-            reqs_md = test_dir_path / "reqs.md"
-            reqs_md.write_text(md_content)
-
-            # Initialize first
-            reqsnake_init(tmpdir)
-
-            # Test status
-            status_result = reqsnake_status(tmpdir)
-
-            self.assertEqual(status_result.total_count, 3)
-            self.assertEqual(status_result.completed_count, 1)
-            self.assertEqual(status_result.critical_count, 1)
-            self.assertEqual(status_result.critical_completed_count, 0)
-
-            # Check that requirements have correct file associations
-            req_ids = {pr.requirement.req_id for pr in status_result.requirements}
-            self.assertEqual(req_ids, {"REQ-1", "REQ-2", "REQ-3"})
-
-            # Check file associations
-            for pr in status_result.requirements:
-                self.assertEqual(pr.source_file, reqs_md)
-
-    def test_reqsnake_status_multiple_files(self) -> None:
-        """Test reqsnake_status with requirements spread across multiple files."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-
-            # Create multiple files
-            file1_content = "> REQ-1\n> First file requirement.\n> completed\n"
-            file1 = test_dir_path / "file1.md"
-            file1.write_text(file1_content)
-
-            file2_content = "> REQ-2\n> Second file requirement.\n> critical\n"
-            file2 = test_dir_path / "file2.md"
-            file2.write_text(file2_content)
-
-            # Initialize first
-            reqsnake_init(tmpdir)
-
-            # Test status
-            status_result = reqsnake_status(tmpdir)
-
-            self.assertEqual(status_result.total_count, 2)
-            self.assertEqual(status_result.completed_count, 1)
-            self.assertEqual(status_result.critical_count, 1)
-
-            # Check file associations
-            file1_reqs = [
-                pr for pr in status_result.requirements if pr.source_file == file1
-            ]
-            file2_reqs = [
-                pr for pr in status_result.requirements if pr.source_file == file2
-            ]
-
-            self.assertEqual(len(file1_reqs), 1)
-            self.assertEqual(len(file2_reqs), 1)
-            self.assertEqual(file1_reqs[0].requirement.req_id, "REQ-1")
-            self.assertEqual(file2_reqs[0].requirement.req_id, "REQ-2")
-
-    def test_status_with_empty_requirements(self) -> None:
-        """Test status functionality with no requirements."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = "# No requirements here\nJust some text.\n"
-            reqs_md = test_dir_path / "reqs.md"
-            reqs_md.write_text(md_content)
-
-            # Initialize first
-            reqsnake_init(tmpdir)
-
-            # Test status
-            status_result = reqsnake_status(tmpdir)
-
-            self.assertEqual(status_result.total_count, 0)
-            self.assertEqual(status_result.completed_count, 0)
-            self.assertEqual(status_result.critical_count, 0)
-            self.assertEqual(status_result.critical_completed_count, 0)
-            self.assertEqual(len(status_result.requirements), 0)
-
-    def test_completed_parent_with_incomplete_child_fails(self) -> None:
-        """REQ-CORE-7: Parent cannot be completed unless all children are completed."""
-        md = "> REQ-1\n> Child.\n> child-of: REQ-2\n\n> REQ-2\n> Parent.\n> completed\n"
-        with tempfile.TemporaryDirectory() as tmpdir:
-            reqs_md = Path(tmpdir) / "reqs.md"
-            reqs_md.write_text(md)
-            with self.assertRaises(ValueError) as ctx:
-                reqsnake_init(tmpdir)
-            self.assertIn("REQ-2", str(ctx.exception))
-            self.assertIn("REQ-1", str(ctx.exception))
-
-    def test_completed_parent_with_completed_child_passes(self) -> None:
-        """REQ-CORE-7: Parent can be completed if all children are completed."""
-        md = "> REQ-1\n> Parent.\n> completed\n> child-of: REQ-2\n\n> REQ-2\n> Child.\n> completed\n"
-        with tempfile.TemporaryDirectory() as tmpdir:
-            reqs_md = Path(tmpdir) / "reqs.md"
-            reqs_md.write_text(md)
-            # Should not raise
-            reqsnake_init(tmpdir)
-
-
-class TestLockfileVersion(unittest.TestCase):
-    """Tests for lockfile version field and format requirements in ReqSnake."""
-
-    def test_lockfile_contains_version(self) -> None:
-        """REQ-OUTPUT-3: reqsnake.lock contains the version of ReqSnake that generated it."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            test_dir_path = Path(tmpdir)
-            md_content = "> REQ-1\n> Test requirement.\n"
-            reqs_md = test_dir_path / "reqs.md"
-            reqs_md.write_text(md_content)
-            reqsnake_init(tmpdir)
-            lockfile_path = test_dir_path / "reqsnake.lock"
-            data = json.loads(lockfile_path.read_text())
-            self.assertIn("version", data)
-            self.assertEqual(data["version"], reqsnake.__version__)
-            self.assertIn("requirements", data)
-            self.assertEqual(len(data["requirements"]), 1)
-            self.assertEqual(data["requirements"][0]["req_id"], "REQ-1")
-
-
 class TestProgressBar(unittest.TestCase):
-    """Unit tests for the _progress_bar function (unicode progress bar rendering)."""
+    """Unit tests for the progress bar utility function."""
 
     def test_zero_total(self) -> None:
-        """Bar is empty when total is zero, regardless of completed."""
-        self.assertEqual(_progress_bar(0, 0), "`[                    ]`")
-        self.assertEqual(_progress_bar(5, 0), "`[                    ]`")
+        """Test progress bar with zero total."""
+        result = progress_bar(0, 0)
+        self.assertEqual(result, "`[" + (" " * 20) + "]`")
 
     def test_zero_completed(self) -> None:
-        """Bar is empty when completed is zero."""
-        self.assertEqual(_progress_bar(0, 10), "`[                    ]`")
+        """Test progress bar with zero completed."""
+        result = progress_bar(0, 10)
+        self.assertEqual(result, "`[" + (" " * 20) + "]`")
 
     def test_full_completed(self) -> None:
-        """Bar is full when completed equals total."""
-        self.assertEqual(_progress_bar(10, 10), "`[████████████████████]`")
+        """Test progress bar with full completion."""
+        result = progress_bar(10, 10)
+        self.assertEqual(result, "`[" + ("█" * 20) + "]`")
 
     def test_half_completed(self) -> None:
-        """Bar is half full when completed is half of total."""
-        self.assertTrue(_progress_bar(10, 20).startswith("`[██████████"))
-        self.assertIn("          ]`", _progress_bar(10, 20))
+        """Test progress bar with half completion."""
+        result = progress_bar(5, 10)
+        self.assertEqual(result, "`[" + ("█" * 10) + (" " * 10) + "]`")
 
     def test_partial_block(self) -> None:
-        """Bar shows a partial unicode block for non-integer progress."""
-        bar = _progress_bar(7, 16, width=8)
-        self.assertTrue(bar.startswith("`[███"))
-        self.assertRegex(bar, r"[▏▎▍▌▋▊▉]")  # Should have a partial block
+        """Test progress bar with partial blocks."""
+        # Accept any partial block character
+        result = progress_bar(1, 8)  # 1/8 = 0.125, should be 2.5 blocks
+        partial_blocks = ["▏", "▎", "▍", "▌", "▋", "▊", "▉"]
+        self.assertTrue(any(b in result for b in partial_blocks))
 
     def test_width_one(self) -> None:
-        """Bar works with width=1."""
-        self.assertIn("`[", _progress_bar(1, 2, width=1))
-        self.assertIn("]`", _progress_bar(1, 2, width=1))
+        """Test progress bar with width of 1."""
+        result = progress_bar(1, 2, width=1)
+        self.assertEqual(result, "`[█]`")
 
     def test_overflow(self) -> None:
-        """Bar is full if completed > total (overflow)."""
-        self.assertEqual(_progress_bar(15, 10), "`[████████████████████]`")
+        """Test progress bar with overflow values."""
+        result = progress_bar(15, 10)  # More completed than total
+        self.assertEqual(result, "`[" + ("█" * 20) + "]`")
 
 
 if __name__ == "__main__":

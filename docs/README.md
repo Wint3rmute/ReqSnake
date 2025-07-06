@@ -9,7 +9,26 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 
 ## ReqSnake - core requirements
 
-(first 2 core requirements are defined in [README.md](../README.md)).
+> REQ-CORE-1
+>
+> ReqSnake shall parse requirements from MkDocs Markdown files using blockquote syntax.
+>
+> critical
+
+> REQ-CORE-2
+> A valid requirement is a blockquote with unique requirement ID as the first line, requirement description as a second line and additional fields as lines below.
+> critical
+
+> REQ-CORE-3
+> Each requirement ID shall be in a form of "<STRING>-<NUMBER>". Where NUMBER is an integer.
+> child-of REQ-CORE-2
+> critical
+
+> REQ-PARSER-1
+> The Markdown parser shall extract requirements from Markdown blockquotes compliant with the specified format.
+> child-of: REQ-CORE-1
+> child-of: REQ-CORE-2
+> child-of: REQ-CORE-3
 
 > REQ-CORE-4
 > The tool shall provide a MkDocs plugin interface for managing requirements.
@@ -25,8 +44,4 @@ This directory stores the requirements of ReqSnake. I figured that I should trac
 
 > REQ-CORE-8
 > The core operations shall be independent from MkDocs' library.
-> critical
-
-> REQ-CORE-9
-> The tool shall store requirements in a reqsnake.lock file in JSON format. The file shall be used to compare differences when making changes to requirements.
 > critical

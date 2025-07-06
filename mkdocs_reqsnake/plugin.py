@@ -1,38 +1,37 @@
 """MkDocs plugin for ReqSnake requirements management integration."""
 
+from typing import Optional
+
 from mkdocs.plugins import BasePlugin
 from mkdocs.config import config_options
-
-# TODO: useful?
-# from typing import TYPE_CHECKING
-
 from mkdocs.structure.files import File, Files, InclusionLevel
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.plugins import get_plugin_logger
 
-from mkdocs_reqsnake.reqsnake import (
-    parse_requirements_from_files,
-    validate_requirements,
+from .parser import parse_requirements_from_files
+from .validator import validate_requirements
+from .generator import (
     generate_requirement_page_content,
     generate_requirement_index_content,
 )
+from .exceptions import ReqSnakeError
 
 logger = get_plugin_logger(__name__)
 
 
-class ReqSnake(BasePlugin):  # type: ignore
+class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
     """MkDocs plugin for generating requirements pages from Markdown files."""
 
     config_scheme = (("enabled", config_options.Type(bool, default=True)),)
 
-    def on_files(self, files: Files, /, *, config: MkDocsConfig) -> Files | None:
+    def on_files(self, files: Files, /, *, config: MkDocsConfig) -> Optional[Files]:
         """Generate requirements pages and index for MkDocs site from Markdown requirements."""
         if not self.config.get("enabled", True):
             return files
         # Extract file paths and content from MkDocs files
         file_data = []
         for file in files.documentation_pages():
-            if file.src_uri is not None:
+            if file.src_uri is not None and file.content_string is not None:
                 file_data.append((file.src_uri, file.content_string))
 
         if not file_data:
@@ -53,7 +52,9 @@ class ReqSnake(BasePlugin):  # type: ignore
             # Generate individual requirement pages
             for parsed_req in parsed_requirements:
                 req = parsed_req.requirement
-                content = generate_requirement_page_content(parsed_req)
+                content = generate_requirement_page_content(
+                    parsed_req, parsed_requirements
+                )
 
                 files.append(
                     File.generated(
@@ -79,7 +80,7 @@ class ReqSnake(BasePlugin):  # type: ignore
                 f"Generated {len(parsed_requirements)} requirement pages and index"
             )
 
-        except ValueError as e:
+        except ReqSnakeError as e:
             logger.error(f"Error parsing requirements: {e}")
             # Don't fail the build, just log the error
             return files

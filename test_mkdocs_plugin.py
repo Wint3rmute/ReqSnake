@@ -8,7 +8,7 @@ import json
 from unittest.mock import MagicMock
 
 from mkdocs_reqsnake.plugin import ReqSnake
-from mkdocs_reqsnake.reqsnake import Requirement
+from mkdocs_reqsnake.models import Requirement
 from mkdocs.structure.files import InclusionLevel
 
 
@@ -125,6 +125,7 @@ class TestMkDocsPlugin(unittest.TestCase):
 > REQ-1
 > Parent requirement.
 > critical
+> completed
 
 > REQ-2
 > Child requirement.
