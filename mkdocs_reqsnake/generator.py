@@ -301,6 +301,7 @@ class RequirementPageGenerator:
         self._add_header(req)
         self._add_status_indicators(req)
         self._add_description(req)
+        self._add_source_link(str(parsed_req.source_file))
 
         children = self.lookup.get_children(req.req_id)
         if children:
@@ -311,8 +312,6 @@ class RequirementPageGenerator:
 
         if children:
             self._add_children_section(children)
-
-        self._add_source_link(str(parsed_req.source_file))
 
         if req.parents:
             self._add_parent_flowchart(req)
@@ -380,7 +379,7 @@ class RequirementPageGenerator:
 
     def _add_source_link(self, source_file: str) -> None:
         """Add source file link."""
-        self.lines.extend(["---", f"*Source: [{source_file}](../../{source_file})*"])
+        self.lines.extend([f"*Source: [{source_file}](../../{source_file})*", "\n\n"])
 
     def _add_parent_flowchart(self, req: Requirement) -> None:
         """Add parent hierarchy flowchart section."""

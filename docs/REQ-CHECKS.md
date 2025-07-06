@@ -4,11 +4,15 @@
 >
 > child-of: REQ-CORE-0
 
+---
+
 > REQ-CHECKS-1
 >
 > ReqSnake shall raise errors when attempting to link a requirement to a non-existing parent.
 >
 > child-of: REQ-CHECKS-0
+
+---
 
 > REQ-CHECKS-2
 >

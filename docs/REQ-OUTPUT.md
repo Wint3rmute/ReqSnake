@@ -8,11 +8,15 @@ This file contains requirements related to output generation and MkDocs plugin f
 >
 > child-of: REQ-CORE-2
 
+---
+
 > REQ-OUTPUT-2
 >
 > ReqSnake shall generate an index page listing all requirements grouped by the requirement category.
 >
 > child-of: REQ-OUTPUT-1
+
+---
 
 > REQ-OUTPUT-3
 >
@@ -20,11 +24,15 @@ This file contains requirements related to output generation and MkDocs plugin f
 >
 > child-of: REQ-OUTPUT-1
 
+---
+
 > REQ-OUTPUT-4
 >
 > Each individual page shall include links back to source files where the requirement was originally defined.
 >
 > child-of: REQ-OUTPUT-3
+
+---
 
 > REQ-OUTPUT-5
 >
@@ -32,11 +40,15 @@ This file contains requirements related to output generation and MkDocs plugin f
 >
 > child-of: REQ-OUTPUT-3
 
+---
+
 > REQ-OUTPUT-6
 >
 > The MkDocs plugin shall integrate with MkDocs' file generation system using the `on_files` lifecycle method.
 >
 > child-of: REQ-CORE-2
+
+---
 
 > REQ-OUTPUT-7
 >
@@ -44,11 +56,15 @@ This file contains requirements related to output generation and MkDocs plugin f
 >
 > child-of: REQ-CORE-2
 
+---
+
 > REQ-OUTPUT-8
 >
 > ReqSnake shall generate requirement pages with proper Markdown formatting including status indicators and child relationships.
 >
 > child-of: REQ-OUTPUT-1
+
+---
 
 > REQ-OUTPUT-9
 >
@@ -56,11 +72,15 @@ This file contains requirements related to output generation and MkDocs plugin f
 >
 > child-of: REQ-OUTPUT-5
 
+---
+
 > REQ-OUTPUT-10
 >
 > Individual requirement pages shall include Mermaid flowchart diagrams showing the hierarchical traceability path from the current requirement up through all its parent requirements to the root level.
 >
 > child-of: REQ-OUTPUT-3
+
+---
 
 > REQ-OUTPUT-11
 >
