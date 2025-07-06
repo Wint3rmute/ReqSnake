@@ -59,6 +59,15 @@ class Requirement:
             "completed": self.completed,
         }
 
+    @property
+    def category(self) -> str:
+        """Extract category from requirement ID (everything before the last dash).
+
+        Returns:
+            The requirement category (e.g., 'REQ-CORE' from 'REQ-CORE-1') or 'OTHER'.
+        """
+        return self.req_id.rsplit("-", 1)[0] if "-" in self.req_id else "OTHER"
+
     def to_pretty_string(self) -> str:
         """Return a human-readable, multi-line string representation."""
         lines = [f"{self.req_id}: {self.description}\n\n"]

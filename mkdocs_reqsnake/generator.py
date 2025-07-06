@@ -60,6 +60,21 @@ class RequirementLookup:
         """
         return sorted(self._children_map[req_id])
 
+    def get_category(self, req_id: str) -> str:
+        """Get requirement category by ID.
+
+        Args:
+            req_id: The requirement ID to look up.
+
+        Returns:
+            The requirement category, or category extracted from ID if not found.
+        """
+        req = self.get_requirement(req_id)
+        if req:
+            return req.requirement.category
+        # Fallback for missing requirements
+        return req_id.rsplit("-", 1)[0] if "-" in req_id else "OTHER"
+
     def get_all_ancestors(
         self, req_id: str, visited: set[str] | None = None
     ) -> list[str]:
@@ -331,9 +346,7 @@ class RequirementPageGenerator:
 
         for parent_id in req.parents:
             parent_desc = self.lookup.get_description(parent_id)
-            parent_category = (
-                parent_id.rsplit("-", 1)[0] if "-" in parent_id else "OTHER"
-            )
+            parent_category = self.lookup.get_category(parent_id)
 
             if parent_desc:
                 self.lines.append(
@@ -354,7 +367,7 @@ class RequirementPageGenerator:
 
         for child_id in children:
             child_desc = self.lookup.get_description(child_id)
-            child_category = child_id.rsplit("-", 1)[0] if "-" in child_id else "OTHER"
+            child_category = self.lookup.get_category(child_id)
 
             if child_desc:
                 self.lines.append(
@@ -423,9 +436,7 @@ def generate_requirement_index_content(
     # Group by requirement category (e.g., REQ-CORE, REQ-PARSER, REQ-TEST)
     category_groups: dict[str, list[ParsedRequirement]] = {}
     for pr in parsed_requirements:
-        req_id = pr.requirement.req_id
-        # Extract category from requirement ID (everything before the last dash)
-        category = req_id.rsplit("-", 1)[0] if "-" in req_id else "OTHER"
+        category = pr.requirement.category
 
         if category not in category_groups:
             category_groups[category] = []
@@ -455,7 +466,7 @@ def generate_requirement_index_content(
 
             lines.append(
                 f"- {status_emoji} {critical_indicator}[{req.req_id}]"
-                f"(./{category}/{req.req_id}.md): {req.description}"
+                f"(./{req.category}/{req.req_id}.md): {req.description}"
             )
         lines.append("")
 
