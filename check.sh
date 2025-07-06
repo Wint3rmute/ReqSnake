@@ -2,8 +2,6 @@
 
 set -e
 
-source .venv/bin/activate
-
 # Format code
 
 python -m ruff format .
