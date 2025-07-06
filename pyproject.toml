@@ -52,7 +52,9 @@ package-dir = { mkdocs_reqsnake = "mkdocs_reqsnake" }
 reqsnake = "mkdocs_reqsnake.plugin:ReqSnake"
 
 [tool.ruff.lint]
-# 1. Enable flake8-bugbear (`B`) rules, in addition to the defaults.
+# Enables rules which are not fully stabilized yet
+preview = true
+
 select = [
     # pycodestyle
     "E",
@@ -73,10 +75,15 @@ select = [
     "D",
 
     # pydoclint
-    # "DOC"
+    "DOC"
 ]
 
+# Those rules caused conflicts at 07.2025
 ignore = ["D203", "D212"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
 
 [tool.pytest.ini_options]
 addopts = [
