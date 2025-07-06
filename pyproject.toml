@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta" # If not defined, then legacy behavior c
 [project]
 name = "mkdocs-reqsnake"
 
-version = "0.0.1" # REQUIRED, although can be dynamic
+version = "0.0.1"                                                                  # REQUIRED, although can be dynamic
 description = "Plugin providing requirements tracking within MkDocs documentation"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -45,12 +45,8 @@ dev = ["ruff", "mypy"]
 [project.urls]
 "Homepage" = "https://github.com/Wint3rmute/ReqSnake/"
 
-# # This is configuration specific to the `setuptools` build backend.
-# # If you are using a different build backend, you will need to change this.
-# [tool.setuptools]
-# # If there are data files included in your packages that need to be
-# # installed, specify them here.
-# package-data = { "sample" = ["*.dat"] }
+[tool.setuptools]
+package-dir = { mkdocs_reqsnake = "mkdocs_reqsnake" }
 
 [project.entry-points."mkdocs.plugins"]
 reqsnake = "mkdocs_reqsnake.plugin:ReqSnake"
