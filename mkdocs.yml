@@ -1,4 +1,7 @@
-site_name: Test
+site_name: ReqSnake documentation & requirements
+
+strict: true
+
 theme:
   name: material
   palette:
