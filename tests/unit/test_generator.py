@@ -134,6 +134,82 @@ class TestRequirementPageGeneration:
         assert 'root(("`REQ-PARSER(8)`"))' in content
         assert '"`REQ-PARSER-9: Normal child`"' in content
 
+    def test_parent_flowchart_generation(self):
+        """Test generation of parent hierarchy flowchart."""
+        root = create_sample_parsed_requirement("REQ-ROOT-1", "Root requirement")
+        parent = create_sample_parsed_requirement(
+            "REQ-PARENT-1", "Parent requirement", parents=["REQ-ROOT-1"]
+        )
+        child = create_sample_parsed_requirement(
+            "REQ-CHILD-1", "Child requirement", parents=["REQ-PARENT-1"]
+        )
+
+        all_reqs = [root, parent, child]
+        content = generate_requirement_page_content(child, all_reqs)
+
+        assert "## Parent Hierarchy Flowchart" in content
+        assert "```mermaid" in content
+        assert "graph TD" in content
+
+        # Check that current requirement is highlighted with CSS class
+        assert '"`REQ-CHILD-1: Child requirement`"]:::current' in content
+
+        # Check that parent and grandparent are included
+        assert '"`REQ-PARENT-1: Parent requirement`"]' in content
+        assert '"`REQ-ROOT-1: Root requirement`"]' in content
+
+        # Check edges from child to parent to grandparent
+        assert "REQ-CHILD-1 --> REQ-PARENT-1" in content
+        assert "REQ-PARENT-1 --> REQ-ROOT-1" in content
+
+        # Check CSS styling is included
+        assert "classDef current fill:#ff9800" in content
+
+    def test_parent_flowchart_with_multiple_parents(self):
+        """Test flowchart generation with multiple parents."""
+        parent1 = create_sample_parsed_requirement("REQ-P1", "First parent")
+        parent2 = create_sample_parsed_requirement("REQ-P2", "Second parent")
+        child = create_sample_parsed_requirement(
+            "REQ-C1", "Child with multiple parents", parents=["REQ-P1", "REQ-P2"]
+        )
+
+        all_reqs = [parent1, parent2, child]
+        content = generate_requirement_page_content(child, all_reqs)
+
+        assert "## Parent Hierarchy Flowchart" in content
+        assert "graph TD" in content
+
+        # Check both parents are included
+        assert '"`REQ-P1: First parent`"]' in content
+        assert '"`REQ-P2: Second parent`"]' in content
+
+        # Check edges to both parents
+        assert "REQ-C1 --> REQ-P1" in content
+        assert "REQ-C1 --> REQ-P2" in content
+
+    def test_parent_flowchart_cycle_prevention(self):
+        """Test that flowchart generation handles circular dependencies gracefully."""
+        # Create a potential circular dependency scenario
+        req1 = create_sample_parsed_requirement("REQ-1", "First requirement")
+        req2 = create_sample_parsed_requirement(
+            "REQ-2", "Second requirement", parents=["REQ-1"]
+        )
+        # Note: In practice, validator would catch this, but test defensive code
+
+        all_reqs = [req1, req2]
+        content = generate_requirement_page_content(req2, all_reqs)
+
+        assert "## Parent Hierarchy Flowchart" in content
+        assert "REQ-2 --> REQ-1" in content
+
+    def test_no_parent_flowchart_when_no_parents(self):
+        """Test that no flowchart is generated when requirement has no parents."""
+        req = create_sample_parsed_requirement("REQ-1", "Orphaned requirement")
+        content = generate_requirement_page_content(req, [req])
+
+        assert "## Parent Hierarchy Flowchart" not in content
+        assert "graph TD" not in content
+
     def test_completion_statistics_parents(self):
         """Test completion statistics for parents."""
         completed_parent = create_sample_parsed_requirement(

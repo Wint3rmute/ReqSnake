@@ -55,3 +55,15 @@ This file contains requirements related to output generation and MkDocs plugin f
 > Mermaid mindmap text content shall be properly sanitized to prevent syntax errors from special characters in requirement descriptions.
 >
 > child-of: REQ-OUTPUT-5
+
+> REQ-OUTPUT-10
+>
+> Individual requirement pages shall include Mermaid flowchart diagrams showing the hierarchical traceability path from the current requirement up through all its parent requirements to the root level.
+>
+> child-of: REQ-OUTPUT-3
+
+> REQ-OUTPUT-11
+>
+> Parent flowchart diagrams shall use directional flow notation (e.g., graph TD or graph LR) to clearly indicate the hierarchical relationship direction from child to parent requirements.
+>
+> child-of: REQ-OUTPUT-10
