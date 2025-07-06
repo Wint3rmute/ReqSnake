@@ -1,6 +1,5 @@
 """Content generation logic for ReqSnake."""
 
-from pathlib import Path
 from typing import Dict, List
 
 from .models import ParsedRequirement

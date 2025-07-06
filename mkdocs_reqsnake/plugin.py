@@ -3,19 +3,18 @@
 from pathlib import Path
 from typing import Optional
 
-from mkdocs.plugins import BasePlugin
 from mkdocs.config import config_options
-from mkdocs.structure.files import File, Files, InclusionLevel
 from mkdocs.config.defaults import MkDocsConfig
-from mkdocs.plugins import get_plugin_logger
+from mkdocs.plugins import BasePlugin, get_plugin_logger
+from mkdocs.structure.files import File, Files, InclusionLevel
 
-from .parser import parse_requirements_from_files
-from .validator import validate_requirements
 from .generator import (
-    generate_requirement_page_content,
     generate_requirement_index_content,
+    generate_requirement_page_content,
 )
+from .parser import parse_requirements_from_files
 from .utils import load_ignore_patterns, should_ignore_file
+from .validator import validate_requirements
 
 logger = get_plugin_logger(__name__)
 

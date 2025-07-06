@@ -1,16 +1,14 @@
 """Tests for the ReqSnake MkDocs plugin functionality."""
 
-import unittest
-import tempfile
 import shutil
+import tempfile
+import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
-import json
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
+from mkdocs.structure.files import InclusionLevel
 
 from mkdocs_reqsnake.plugin import ReqSnake
-from mkdocs_reqsnake.models import Requirement
-from mkdocs.structure.files import InclusionLevel
 
 
 class TestMkDocsPlugin(unittest.TestCase):

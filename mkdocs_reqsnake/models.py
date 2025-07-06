@@ -1,7 +1,6 @@
 """Data models for ReqSnake."""
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Dict, List
 

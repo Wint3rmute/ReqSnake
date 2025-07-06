@@ -53,4 +53,4 @@ reqsnake = "mkdocs_reqsnake.plugin:ReqSnake"
 
 [tool.ruff.lint]
 # 1. Enable flake8-bugbear (`B`) rules, in addition to the defaults.
-select = ["D", "B"]
+select = ["F", "I", "W", "E"]

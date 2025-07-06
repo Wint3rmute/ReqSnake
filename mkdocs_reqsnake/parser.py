@@ -9,7 +9,6 @@ from mkdocs.exceptions import PluginError
 from .exceptions import InvalidRequirementIdError, ParseError, UnknownAttributeError
 from .models import ParsedRequirement, Requirement
 
-
 # Regex for blockquotes: matches contiguous blockquote lines
 BLOCKQUOTE_PATTERN = re.compile(
     r"(^> .*(?:\n>.*)*)",  # Match a block starting with '> ' and all following '> ...' lines

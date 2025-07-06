@@ -1,23 +1,19 @@
 """Unit and integration tests for ReqSnake requirements management tool."""
 
-import unittest
-import tempfile
-import os
 import shutil
-import json
-import random
+import tempfile
+import unittest
+from pathlib import Path
+
 from mkdocs.exceptions import PluginError
+
 from mkdocs_reqsnake.models import Requirement
 from mkdocs_reqsnake.parser import (
-    parse_requirements_from_markdown,
     parse_requirements_from_files,
+    parse_requirements_from_markdown,
 )
-from mkdocs_reqsnake.validator import validate_requirements
 from mkdocs_reqsnake.utils import load_ignore_patterns, should_ignore_file
-from pathlib import Path
-import subprocess
-import sys
-from typing import Any
+from mkdocs_reqsnake.validator import validate_requirements
 
 
 class TestRequirementParser(unittest.TestCase):

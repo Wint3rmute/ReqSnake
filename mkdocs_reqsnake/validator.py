@@ -7,7 +7,6 @@ from .exceptions import (
     CircularDependencyError,
     CompletionValidationError,
     DuplicateRequirementError,
-    ValidationError,
 )
 from .models import ParsedRequirement, Requirement
 
