@@ -2,11 +2,18 @@
 
 > REQ-PARSER-0
 >
-> A valid requirement is a blockquote with unique requirement ID as the first line in the form of `STRING-NUMBER`, requirement description as a second line and additional fields as lines below.
+> A valid requirement is a blockquote with unique requirement ID as the first line in the form of `CATEGORY-NUMBER`, requirement description as a second line and additional fields as lines below.
 >
 > critical
 >
 > child-of: REQ-PARSER-1
+
+You can pick any string for `CATEGORY`, depending on the specifics of your
+project. For example:
+
+- `AUTH` - requirement related to authentication in a web app
+- `MECH` - mechanical requirement when designing a physical object/machine
+- `LAW` - compliance to a law in the country when software will be deployed
 
 > REQ-PARSER-1
 >
@@ -63,7 +70,7 @@ Todo: this should be changed to raise errors instead?
 > child-of: REQ-PARSER-1
 
 > REQ-PARSER-12
-> The parser shall handle blockquotes with inconsistent use of '>' by only considering lines that start with '>'.
+> The parser shall handle blockquotes with inconsistent use of `>` by only considering lines that start with `>`.
 > child-of: REQ-CORE-1
 
 > REQ-PARSER-13
