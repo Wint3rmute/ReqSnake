@@ -6,6 +6,7 @@ import os
 import shutil
 import json
 import random
+from mkdocs.exceptions import PluginError
 from mkdocs_reqsnake.models import Requirement
 from mkdocs_reqsnake.parser import (
     parse_requirements_from_markdown,
@@ -223,12 +224,12 @@ Moar text!
             self.assertIn("contains non-ASCII characters", str(ctx.exception))
 
     def test_unknown_attributes_raise_error(self) -> None:
-        """REQ-PARSER-10: Unknown attributes should be ignored, not raise a ValueError."""
+        """REQ-PARSER-10: Unknown attributes should raise PluginError."""
         md = "> REQ-1\n> Test.\n> unknown-attr\n"
-        reqs = parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 1)
-        self.assertEqual(reqs[0].req_id, "REQ-1")
-        self.assertEqual(reqs[0].description, "Test.")
+        with self.assertRaises(PluginError) as ctx:
+            parse_requirements_from_markdown(md)
+        self.assertIn("Unknown attribute 'unknown-attr'", str(ctx.exception))
+        self.assertIn("REQ-1", str(ctx.exception))
 
     def test_circular_dependency_detection(self) -> None:
         """REQ-PARSER-15: Circular dependencies should be detected and raise ValueError."""
@@ -331,13 +332,15 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
         self.assertEqual(len(reqs), 1)
         self.assertEqual(set(reqs[0].parents), {"REQ-2", "REQ-3"})
 
-    def test_ignore_unknown_attributes(self) -> None:
-        """Test that unknown attributes are ignored."""
-        md = "> REQ-1\n> Test.\n> unknown-attr\n"
-        reqs = parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 1)
-        self.assertEqual(reqs[0].req_id, "REQ-1")
-        self.assertEqual(reqs[0].description, "Test.")
+    def test_unknown_attributes_with_value_raise_error(self) -> None:
+        """Test that unknown attributes with values also raise PluginError."""
+        md = "> REQ-1\n> Test.\n> unknown-attr: some value\n"
+        with self.assertRaises(PluginError) as ctx:
+            parse_requirements_from_markdown(md)
+        self.assertIn(
+            "Unknown attribute 'unknown-attr: some value'", str(ctx.exception)
+        )
+        self.assertIn("REQ-1", str(ctx.exception))
 
     def test_case_sensitive_ids(self) -> None:
         """Test that requirement IDs are case-sensitive."""
@@ -348,12 +351,25 @@ class TestRequirementParserEdgeCases(unittest.TestCase):
         self.assertEqual(reqs[1].req_id, "req-1")
 
     def test_inconsistent_blockquote_lines(self) -> None:
-        """Test that inconsistent blockquote lines are handled."""
-        md = "> REQ-1\n> Description\n> critical\n> Not a blockquote\n> completed\n"
+        """Test that lines without '>' break blockquote blocks, and invalid attributes raise errors."""
+        # Lines without '>' break blockquote blocks (REQ-PARSER-12)
+        # This creates two separate blocks: one complete requirement and one invalid block
+        md = "> REQ-1\n> Description\n> critical\nNot a blockquote\n> completed\n"
         reqs = parse_requirements_from_markdown(md)
-        self.assertEqual(len(reqs), 1)
+        self.assertEqual(len(reqs), 1)  # Only the complete requirement is parsed
+        self.assertEqual(reqs[0].req_id, "REQ-1")
+        self.assertEqual(reqs[0].description, "Description")
         self.assertTrue(reqs[0].critical)
-        self.assertTrue(reqs[0].completed)
+        self.assertFalse(
+            reqs[0].completed
+        )  # 'completed' is in a separate block that gets ignored
+
+        # But invalid attributes in blockquotes should raise errors (REQ-PARSER-10)
+        md_with_invalid = (
+            "> REQ-1\n> Description\n> critical\n> Not a valid attribute\n> completed\n"
+        )
+        with self.assertRaises(PluginError):
+            parse_requirements_from_markdown(md_with_invalid)
 
     def test_ignore_markdown_formatting(self) -> None:
         """Test that markdown formatting in descriptions is preserved."""

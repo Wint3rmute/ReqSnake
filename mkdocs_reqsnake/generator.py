@@ -38,7 +38,9 @@ def generate_requirement_page_content(
 
     def _requirement_exists(req_id: str) -> bool:
         """Check if a requirement exists in the parsed requirements."""
-        return any(other_req.requirement.req_id == req_id for other_req in all_requirements)
+        return any(
+            other_req.requirement.req_id == req_id for other_req in all_requirements
+        )
 
     lines = []
     lines.append(f"# {req.req_id}")
@@ -116,7 +118,9 @@ def generate_requirement_page_content(
                         f"- [{parent_id}](../{parent_category}/{parent_id}.md) - {parent_desc}"
                     )
                 else:
-                    lines.append(f"- [{parent_id}](../{parent_category}/{parent_id}.md)")
+                    lines.append(
+                        f"- [{parent_id}](../{parent_category}/{parent_id}.md)"
+                    )
             else:
                 lines.append(f"- {parent_id} (not found)")
         lines.append("")

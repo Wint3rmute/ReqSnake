@@ -4,6 +4,8 @@ import re
 from pathlib import Path
 from typing import List, Set, Tuple
 
+from mkdocs.exceptions import PluginError
+
 from .exceptions import InvalidRequirementIdError, ParseError, UnknownAttributeError
 from .models import ParsedRequirement, Requirement
 
@@ -151,10 +153,8 @@ def _process_attribute_line(
         _process_child_of_line(line, req_id, seen_parents, parents)
         return critical, completed
     else:
-        # NOTE: REQ-PARSER-10 says to raise errors on unknown attributes,
-        # but the original code and tests expect them to be ignored.
-        # Keeping original behavior for backward compatibility.
-        return critical, completed
+        # REQ-PARSER-10: raise errors on unknown attributes
+        raise PluginError(f"Unknown attribute '{line.strip()}' in requirement {req_id}")
 
 
 def _process_child_of_line(
