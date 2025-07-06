@@ -25,8 +25,9 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
 
     config_scheme = (("enabled", config_options.Type(bool, default=True)),)
 
-
-    def on_nav(self, nav: Navigation, /, *, config: MkDocsConfig, files: Files) -> Navigation | None:
+    def on_nav(
+        self, nav: Navigation, /, *, config: MkDocsConfig, files: Files
+    ) -> Navigation | None:
         """Generate requirements pages and inject them into navigation."""
         if not self.config.get("enabled", True):
             return nav
@@ -118,34 +119,36 @@ class ReqSnake(BasePlugin):  # type: ignore[no-untyped-call,type-arg]
 
         # Create the main Requirements section
         requirements_children = []
-        
+
         # Add the index page first
         requirements_index = Page("Overview", index_file, config)
         requirements_children.append(requirements_index)
-        
+
         # Add category subsections
         for category, cat_files in sorted(categories.items()):
             category_children = []
-            
+
             # Sort files by requirement ID for consistent ordering
             sorted_files = sorted(cat_files, key=lambda f: f.src_uri.split("/")[-1])
-            
+
             for req_file in sorted_files:
                 # Extract requirement ID from filename: REQ-CORE-1.md -> REQ-CORE-1
                 req_id = req_file.src_uri.split("/")[-1].replace(".md", "")
                 req_page = Page(req_id, req_file, config)
                 category_children.append(req_page)
-            
+
             # Create category section
             category_section = Section(category, category_children)
             requirements_children.append(category_section)
-        
+
         # Create the main Requirements section
         requirements_section = Section("Requirements", requirements_children)
-        
+
         # Add the Requirements section to navigation
         nav.items.append(requirements_section)
-        
-        logger.info(f"Injected ReqSnake navigation with {len(categories)} categories and {len(generated_files)} pages")
+
+        logger.info(
+            f"Injected ReqSnake navigation with {len(categories)} categories and {len(generated_files)} pages"
+        )
 
         return nav
