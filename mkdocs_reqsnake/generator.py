@@ -58,66 +58,24 @@ def generate_requirement_page_content(
         if req.req_id in other_req.requirement.parents:
             children.append(other_req.requirement.req_id)
 
-    # Add Mermaid diagram if there are parents or children
-    if req.parents or children:
-        lines.append("## Relationship Diagram")
+    # Add Mermaid mindmap if there are children
+    if children:
+        lines.append("## Children Mindmap")
         lines.append("")
         lines.append("```mermaid")
-        lines.append("graph LR")
+        lines.append("mindmap")
+        lines.append(f"  root(({req.req_id}))")
 
-        # Add parent nodes and connections
-        for parent_id in req.parents:
-            parent_desc = _get_requirement_by_id(parent_id)
-            parent_label = (
-                f"{parent_id}<br/>{_truncate_description(parent_desc)}"
-                if parent_desc
-                else parent_id
-            )
-            lines.append(f'    {parent_id}["{parent_label}"]')
-            lines.append(f"    {parent_id} --> {req.req_id}")
-
-        # Add current requirement node
-        current_label = f"{req.req_id}<br/>{_truncate_description(req.description)}"
-        lines.append(f'    {req.req_id}["{current_label}"]')
-
-        # Add child nodes and connections
+        # Add child nodes
         sorted_children = sorted(children)
         for child_id in sorted_children:
             child_desc = _get_requirement_by_id(child_id)
-            child_label = (
-                f"{child_id}<br/>{_truncate_description(child_desc)}"
-                if child_desc
-                else child_id
-            )
-            lines.append(f'    {child_id}["{child_label}"]')
-            lines.append(f"    {req.req_id} --> {child_id}")
-
-        # Add click events for navigation
-        for parent_id in req.parents:
-            lines.append(f'    click {parent_id} "/reqsnake/{parent_id}"')
-        lines.append(f'    click {req.req_id} "/reqsnake/{req.req_id}"')
-        for child_id in sorted_children:
-            lines.append(f'    click {child_id} "/reqsnake/{child_id}"')
-
-        # Add styling for different node types
-        if req.parents:
-            lines.append(
-                "    classDef parentStyle fill:transparent,stroke:#2196f3,stroke-width:3px,color:#2196f3"
-            )
-            for parent_id in req.parents:
-                lines.append(f"    class {parent_id} parentStyle")
-
-        lines.append(
-            "    classDef currentStyle fill:transparent,stroke:#ff9800,stroke-width:4px,color:#ff9800"
-        )
-        lines.append(f"    class {req.req_id} currentStyle")
-
-        if children:
-            lines.append(
-                "    classDef childStyle fill:transparent,stroke:#9c27b0,stroke-width:3px,color:#9c27b0"
-            )
-            for child_id in sorted_children:
-                lines.append(f"    class {child_id} childStyle")
+            if child_desc:
+                # Truncate description for mindmap display
+                truncated_desc = _truncate_description(child_desc, max_words=5)
+                lines.append(f"    {child_id}[{child_id}: {truncated_desc}]")
+            else:
+                lines.append(f"    {child_id}")
 
         lines.append("```")
         lines.append("")
