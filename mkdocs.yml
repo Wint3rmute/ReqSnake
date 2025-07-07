@@ -1,5 +1,8 @@
 site_name: ReqSnake documentation & requirements
 
+repo_url: https://github.com/Wint3rmute/ReqSnake
+edit_uri: edit/main/docs/
+
 strict: true
 
 nav:
@@ -27,6 +30,9 @@ theme:
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
+  # Displays an edit button linking to GitHub edit page
+  features:
+    - content.action.edit
 plugins:
   - reqsnake
   - search
